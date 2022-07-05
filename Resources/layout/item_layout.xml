@@ -2,12 +2,70 @@
 <androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent">
-    <TextView
-        android:id="@+id/ItemName"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_centerInParent="true"
-        android:text="Hello World!" />
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:id="@+id/CardContainer"
+    android:layout_margin="5dp"
+    app:cardElevation="4dp"
+    app:cardCornerRadius="12dp">
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:id="@+id/Container"
+        android:padding="5dp">
+        <FrameLayout
+            android:id="@+id/ItemContainer"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+            <LinearLayout
+                android:id="@+id/NonGroupItem"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content">
+                <TextView
+                    android:id="@+id/ItemName"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_centerInParent="true"
+                    android:text="Hello World!" />
+            </LinearLayout>
+            <LinearLayout
+                android:id="@+id/GroupItem"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+                <TextView
+                    android:id="@+id/ItemNameGrouping1"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_centerInParent="true"
+                    android:text="Hello World!" />
+                <TextView
+                    android:id="@+id/ItemNameGrouping2"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_centerInParent="true"
+                    android:text="Hello World!" />
+                <TextView
+                    android:id="@+id/ItemNameGrouping3"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_centerInParent="true"
+                    android:text="Hello World!" />
+                <TextView
+                    android:id="@+id/ItemNameGrouping4"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_centerInParent="true"
+                    android:text="Hello World!" />
+            </LinearLayout>
+        </FrameLayout>
+        <!--<LinearLayout
+            android:id="@+id/IndicatorGrouping"
+            android:layout_width="120dp"
+            android:layout_height="120dp"
+            android:background="@drawable/background_group_indicator"
+            android:visibility="gone"/>-->
+    </FrameLayout>
+
 </androidx.cardview.widget.CardView>
