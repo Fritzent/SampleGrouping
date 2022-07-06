@@ -17,18 +17,18 @@ namespace SampleGrouping
     public class MyAdapter : RecyclerView.Adapter, ItemMoveCallback.ItemTouchHelperContract
     {
         #region Fields
-        private Dictionary<int, List<Data>> _groupingDictionary;
+        private Dictionary<int, List<HomeScreenMenuItem>> _groupingDictionary;
         private int _targetPositionToShowIndicatorGrouping;
         private bool _isIndicatorGroupingShowForTarget;
         #endregion
         #region Properties
-        public List<Data> data;
-        public Dictionary<int, List<Data>> GroupDictionary
+        public List<HomeScreenMenuItem> data;
+        public Dictionary<int, List<HomeScreenMenuItem>> GroupDictionary
         {
             get
             {
                 if (_groupingDictionary == null)
-                    _groupingDictionary = new Dictionary<int, List<Data>>();
+                    _groupingDictionary = new Dictionary<int, List<HomeScreenMenuItem>>();
                 return _groupingDictionary;
             }
             set
@@ -64,24 +64,117 @@ namespace SampleGrouping
         public int previousContainerSize { get; set; }
         public int previousItemContainerSize { get; set; }
         public MainActivity MainActivity { get; set; }
+        public bool isModeEditNow { get; set; }
+        public RecyclerView RecyclerView { get; set; }
         #endregion
 
-        public MyAdapter(List<Data> data, MainActivity mainActivity)
+        public MyAdapter(List<HomeScreenMenuItem> data, MainActivity mainActivity, HomeScreenMenu homeScreenMenu, RecyclerView recyclerView)
         {
-            this.data = data;
+            //disini sebelum masuk ke this data harus di handle sesuai posisi dulu
+            //this.data = data;
+            this.LoadData(data, homeScreenMenu);
             this.MainActivity = mainActivity;
+            this.RecyclerView = recyclerView;
         }
+
+        public void LoadData(List<HomeScreenMenuItem> data, HomeScreenMenu homeScreenMenu)
+        {
+            var pageSize = homeScreenMenu.pageSize;
+            var itemCount = 12 * pageSize;
+            List<HomeScreenMenuItem> itemGenerated = new List<HomeScreenMenuItem>();
+
+            for (int i = 0; i < itemCount; i ++)
+            {
+                List<HomeScreenMenuItem> findItem = data.Where(o => o.ItemPosition == i && o.IsDeleted == false).ToList();
+                if (findItem.Count > 0)
+                {
+                    foreach (HomeScreenMenuItem item in findItem)
+                    {
+                        if (item != null)
+                        {
+                            if (!string.IsNullOrEmpty(item.GroupName))
+                            {
+                                List<HomeScreenMenuItem> getGroupItem = data.Where(o => o.ItemPosition == item.ItemPosition).ToList();
+                                foreach (HomeScreenMenuItem eachItem in getGroupItem)
+                                {
+                                    if (!this.GroupDictionary.ContainsKey(eachItem.ItemPosition))
+                                        this.GroupDictionary.Add(eachItem.ItemPosition, getGroupItem);
+                                }
+                                var LastItemInThisGroup = getGroupItem.Last();
+
+                                if (item.HomeScreenMenuItemId == LastItemInThisGroup.HomeScreenMenuItemId)
+                                {
+                                    item.ListGroupItemName = new List<string>();
+
+                                    List<HomeScreenMenuItem> itemsInDictionary = this.GroupDictionary[item.ItemPosition];
+
+                                    foreach (HomeScreenMenuItem itemInDictionary in itemsInDictionary)
+                                    {
+                                        if (itemInDictionary.HomeScreenMenuItemId != item.HomeScreenMenuItemId)
+                                        {
+                                            if (itemInDictionary.ItemType == "product")
+                                            {
+                                                if (itemInDictionary.ItemName != null)
+                                                    item.ListGroupItemName.Add(itemInDictionary.ItemName);
+                                            }
+                                        }
+                                        else
+                                        {
+                                            if (item.ItemType == "product")
+                                            {
+                                                if (item.ItemName != null)
+                                                    item.ListGroupItemName.Add(item.ItemName);
+                                            }
+                                        }
+                                    }
+                                    itemGenerated.Add(item);
+                                }
+                            }
+                            else
+                            {
+                                itemGenerated.Add(item);
+                            }
+                        }
+                        else
+                        {
+                            HomeScreenMenuItem emptyItem = new HomeScreenMenuItem();
+                            emptyItem.ItemPosition = i;
+                            //emptyItem.ItemName = "New Item" + (i + 1);
+                            emptyItem.HomeScreenMenuItemId = Guid.NewGuid();
+                            emptyItem.HomeScreenMenuId = homeScreenMenu.homeScreenMenuId;
+
+                            itemGenerated.Add(emptyItem);
+                        }
+                    }
+                }
+                else
+                {
+                    HomeScreenMenuItem emptyItem = new HomeScreenMenuItem();
+                    emptyItem.ItemPosition = i;
+                    emptyItem.ItemName = "New Item" + i;
+                    emptyItem.HomeScreenMenuItemId = Guid.NewGuid();
+                    emptyItem.ItemType = "product";
+                    emptyItem.HomeScreenMenuId = homeScreenMenu.homeScreenMenuId;
+
+                    itemGenerated.Add(emptyItem);
+                }
+            }
+            this.data = itemGenerated;
+        }
+
         public void SetDataToShowGroupingIndicator (int TargetPosition, bool IsTargetIndicatorGroupingShowed)
         {
             this.TargetPositionToShowIndicatorGrouping = TargetPosition;
             this.IsIndicatorGroupingShowForTarget = IsTargetIndicatorGroupingShowed;
         }
+        public int MarginToLinearLayout { get; set; }
+        public int MarginCardView { get; set; }
         public override void OnBindViewHolder(RecyclerView.ViewHolder holder, int position)
         {
             MyViewHolder h = holder as MyViewHolder;
-            
-            Data itemProduct = data[position] as Data;
-            
+
+            HomeScreenMenuItem itemProduct = data[position] as HomeScreenMenuItem;
+
             if (h != null)
             {
 
@@ -142,184 +235,284 @@ namespace SampleGrouping
                         GroupItemItemName4.Visibility = ViewStates.Gone;
                     }
                 }
-            }
-            //disini handle kalau dia type yg grouping munculin yg bagian grouping
-            if (!string.IsNullOrEmpty(itemProduct.groupName) || itemProduct.listGroupItemName != null)
-            {
-                if (h.GroupItemSection != null)
+                if (h.DeleteItems != null)
                 {
-                    ViewGroup GroupItemSection = h.GroupItemSection as ViewGroup;
-                    if (GroupItemSection != null)
-                        GroupItemSection.Visibility = ViewStates.Visible;
-                    //ini untuk handle berapa jumlah nama yg dimunculin dalam item group sectionnya
-                    int countGroupItemNameInListGroupItemName = itemProduct.listGroupItemName.Count();
-                    if (itemProduct.listGroupItemName.Count() > 4)
-                        countGroupItemNameInListGroupItemName = 4;
+                    FrameLayout DeleteItems = h.DeleteItems as FrameLayout;
+                    if (DeleteItems != null)
+                        DeleteItems.Visibility = ViewStates.Gone;
+                }
+                if (h.HomeScreenEmptyProduct != null)
+                {
+                    FrameLayout HomeScreenEmptyProduct = h.HomeScreenEmptyProduct as FrameLayout;
+                    if (HomeScreenEmptyProduct != null)
+                        HomeScreenEmptyProduct.Visibility = ViewStates.Gone;
+                }
+                if (h.HomeScreenEmptyProductNotOnEdit != null)
+                {
+                    LinearLayout HomeScreenEmptyProductNotOnEdit = h.HomeScreenEmptyProductNotOnEdit as LinearLayout;
+                    if (HomeScreenEmptyProductNotOnEdit != null)
+                        HomeScreenEmptyProductNotOnEdit.Visibility = ViewStates.Gone;
+                }
+                if (h.HomeScreenEmptyProductOnEdit != null)
+                {
+                    FrameLayout HomeScreenEmptyProductOnEdit = h.HomeScreenEmptyProductOnEdit as FrameLayout;
+                    if (HomeScreenEmptyProductOnEdit != null)
+                        HomeScreenEmptyProductOnEdit.Visibility = ViewStates.Gone;
+                }
+                if (h.RelativeContainer != null)
+                {
+                    RelativeLayout RelativeContainer = h.RelativeContainer as RelativeLayout;
+                    if (RelativeContainer != null)
+                        RelativeContainer.Visibility = ViewStates.Gone;
+                }
+                if (h.CardContainer != null)
+                {
+                    AndroidX.CardView.Widget.CardView CardContainer = h.CardContainer as AndroidX.CardView.Widget.CardView;
+                    if (CardContainer != null)
+                        CardContainer.Visibility = ViewStates.Gone;
+                }
+            }
 
-                    if (countGroupItemNameInListGroupItemName != 0)
+            //disini coba handle ketika dalam edit mode berarti orientation kan kebawah jadi custome ulang ukuran linear container dan card container
+
+            //disini ketika tidak dalam edit mode berarti orientationnya kan ke samping jadi set ulang si linear container dan carad container
+
+            //disini handle kalau dia type yg grouping munculin yg bagian grouping
+            if (!string.IsNullOrEmpty(itemProduct.ItemType))
+            {
+                if (!string.IsNullOrEmpty(itemProduct.GroupName) || itemProduct.ListGroupItemName != null)
+                {
+                    if (h.GroupItemSection != null)
                     {
-                        for (int i = 1; i <= countGroupItemNameInListGroupItemName; i++)
-                        {
-                            if (i == 1)
-                            {
-                                if (h.GroupItemItemName1 != null)
-                                {
-                                    TextView GroupItemName = h.GroupItemItemName1 as TextView;
-                                    if (GroupItemName != null)
-                                    {
-                                        if (itemProduct.listGroupItemName[i - 1] != null)
-                                        {
-                                            GroupItemName.Text = itemProduct.listGroupItemName[i - 1];
-                                            GroupItemName.Visibility = ViewStates.Visible;
-                                        }
-                                    }
-                                }
-                            }
-                            if (i == 2)
-                            {
-                                if (h.GroupItemItemName2 != null)
-                                {
-                                    TextView GroupItemName = h.GroupItemItemName2 as TextView;
-                                    if (GroupItemName != null)
-                                    {
-                                        if (itemProduct.listGroupItemName[i - 1] != null)
-                                        {
-                                            GroupItemName.Text = itemProduct.listGroupItemName[i - 1];
-                                            GroupItemName.Visibility = ViewStates.Visible;
-                                        }
-                                    }
-                                }
-                            }
-                            if (i == 3)
-                            {
-                                if (h.GroupItemItemName3 != null)
-                                {
-                                    TextView GroupItemName = h.GroupItemItemName3 as TextView;
-                                    if (GroupItemName != null)
-                                    {
-                                        if (itemProduct.listGroupItemName[i - 1] != null)
-                                        {
-                                            GroupItemName.Text = itemProduct.listGroupItemName[i - 1];
-                                            GroupItemName.Visibility = ViewStates.Visible;
-                                        }
-                                    }
-                                }
-                            }
-                            if (i == 4)
-                            {
-                                if (h.GroupItemItemName4 != null)
-                                {
-                                    TextView GroupItemName = h.GroupItemItemName4 as TextView;
-                                    if (GroupItemName != null)
-                                    {
-                                        if (itemProduct.listGroupItemName[i - 1] != null)
-                                        {
-                                            GroupItemName.Text = itemProduct.listGroupItemName[i - 1];
-                                            GroupItemName.Visibility = ViewStates.Visible;
-                                        }
-                                    }
-                                }
-                            }
+                        ViewGroup GroupItemSection = h.GroupItemSection as ViewGroup;
+                        if (GroupItemSection != null)
+                            GroupItemSection.Visibility = ViewStates.Visible;
+                        //ini untuk handle berapa jumlah nama yg dimunculin dalam item group sectionnya
+                        int countGroupItemNameInListGroupItemName = itemProduct.ListGroupItemName.Count();
+                        if (itemProduct.ListGroupItemName.Count() > 4)
+                            countGroupItemNameInListGroupItemName = 4;
 
-                            //if (h.Views.ContainsKey("GroupItemItemName"+i))
-                            //{
-                            //    TextView GroupItemName = h.Views["GroupItemItemName" + i] as TextView;
-                            //    if (GroupItemName != null)
-                            //    {
-                            //        if(itemProduct.listGroupItemName[i - 1] != null)
-                            //        {
-                            //            GroupItemName.Text = itemProduct.listGroupItemName[i - 1];
-                            //            GroupItemName.Visibility = ViewStates.Visible;
-                            //        }
-                            //    }
-                            //}
+                        if (countGroupItemNameInListGroupItemName != 0)
+                        {
+                            for (int i = 1; i <= countGroupItemNameInListGroupItemName; i++)
+                            {
+                                if (i == 1)
+                                {
+                                    if (h.GroupItemItemName1 != null)
+                                    {
+                                        TextView GroupItemName = h.GroupItemItemName1 as TextView;
+                                        if (GroupItemName != null)
+                                        {
+                                            if (itemProduct.ListGroupItemName[i - 1] != null)
+                                            {
+                                                GroupItemName.Text = itemProduct.ListGroupItemName[i - 1];
+                                                GroupItemName.Visibility = ViewStates.Visible;
+                                            }
+                                        }
+                                    }
+                                }
+                                if (i == 2)
+                                {
+                                    if (h.GroupItemItemName2 != null)
+                                    {
+                                        TextView GroupItemName = h.GroupItemItemName2 as TextView;
+                                        if (GroupItemName != null)
+                                        {
+                                            if (itemProduct.ListGroupItemName[i - 1] != null)
+                                            {
+                                                GroupItemName.Text = itemProduct.ListGroupItemName[i - 1];
+                                                GroupItemName.Visibility = ViewStates.Visible;
+                                            }
+                                        }
+                                    }
+                                }
+                                if (i == 3)
+                                {
+                                    if (h.GroupItemItemName3 != null)
+                                    {
+                                        TextView GroupItemName = h.GroupItemItemName3 as TextView;
+                                        if (GroupItemName != null)
+                                        {
+                                            if (itemProduct.ListGroupItemName[i - 1] != null)
+                                            {
+                                                GroupItemName.Text = itemProduct.ListGroupItemName[i - 1];
+                                                GroupItemName.Visibility = ViewStates.Visible;
+                                            }
+                                        }
+                                    }
+                                }
+                                if (i == 4)
+                                {
+                                    if (h.GroupItemItemName4 != null)
+                                    {
+                                        TextView GroupItemName = h.GroupItemItemName4 as TextView;
+                                        if (GroupItemName != null)
+                                        {
+                                            if (itemProduct.ListGroupItemName[i - 1] != null)
+                                            {
+                                                GroupItemName.Text = itemProduct.ListGroupItemName[i - 1];
+                                                GroupItemName.Visibility = ViewStates.Visible;
+                                            }
+                                        }
+                                    }
+                                }
+
+                            }
                         }
                     }
                 }
             }
             //disini handle kalau dia type gk grouping munculin yg bagian gk grouping
-            if (string.IsNullOrEmpty(itemProduct.groupName) && itemProduct.listGroupItemName == null)
+            if (!string.IsNullOrEmpty(itemProduct.ItemType))
             {
-                if (h.NonGroupItemSection != null)
+                if (string.IsNullOrEmpty(itemProduct.GroupName) && itemProduct.ListGroupItemName == null)
                 {
-                    ViewGroup NonGroupItemSection = h.NonGroupItemSection as ViewGroup;
-                    if (NonGroupItemSection != null)
-                        NonGroupItemSection.Visibility = ViewStates.Visible;
-                }
-                if (h.NonGroupItemName != null)
-                {
-                    TextView NonGroupItemName = h.NonGroupItemName as TextView;
-                    if (NonGroupItemName != null)
+                    if (h.NonGroupItemSection != null)
                     {
-                        NonGroupItemName.Text = itemProduct.itemName;
-                        NonGroupItemName.Visibility = ViewStates.Visible;
+                        ViewGroup NonGroupItemSection = h.NonGroupItemSection as ViewGroup;
+                        if (NonGroupItemSection != null)
+                            NonGroupItemSection.Visibility = ViewStates.Visible;
                     }
-
-                }
-                //if (h.Views.ContainsKey("NonGroupItemSection"))
-                //{
-                //    ViewGroup NonGroupItemSection = h.Views["NonGroupItemSection"] as ViewGroup;
-                //    if (NonGroupItemSection != null)
-                //        NonGroupItemSection.Visibility = ViewStates.Visible;
-                //}
-                //if (h.Views.ContainsKey("NonGroupItemName"))
-                //{
-                //    TextView NonGroupItemName = h.Views["NonGroupItemName"] as TextView;
-
-                //}
-            }
-            //disini untuk handle yg indicator groupingnya
-            if (itemProduct.isIndicatorShow)
-            {
-                if (h.Container != null)
-                {
-                    FrameLayout Container = h.Container as FrameLayout;
-                    if (Container != null)
+                    if (h.NonGroupItemName != null)
                     {
-                        ViewGroup.LayoutParams param = Container.LayoutParameters;
-                        this.previousContainerSize = (int)param.Width;
-                        param.Width = (int)(150);
-                        Container.LayoutParameters = param;
-                        //disini ukurannya diubah jadi 100 dp
-                    }
-                }
-                if (h.ItemContainer != null)
-                {
-                    FrameLayout ItemContainer = h.ItemContainer as FrameLayout;
-                    if (ItemContainer != null)
-                    {
-                        ViewGroup.LayoutParams param = ItemContainer.LayoutParameters;
-                        this.previousItemContainerSize = (int)param.Width;
-                        param.Width = (int)(100);
-                        ItemContainer.LayoutParameters = param;
-                        //disini ukurannya diubah jadi 80dpan
+                        TextView NonGroupItemName = h.NonGroupItemName as TextView;
+                        if (NonGroupItemName != null)
+                        {
+                            NonGroupItemName.Text = itemProduct.ItemName;
+                            NonGroupItemName.Visibility = ViewStates.Visible;
+                        }
+
                     }
                 }
             }
-            else if (!itemProduct.isIndicatorShow && this.previousContainerSize != 0 && this.previousItemContainerSize != 0)
+            //disini buat handle tampilan item yg itemtypenya gk ada
+            if (string.IsNullOrEmpty(itemProduct.ItemType))
             {
-
-                if (h.Container != null)
+                if (h.HomeScreenEmptyProduct != null)
                 {
-                    FrameLayout Container = h.Container as FrameLayout;
-                    if (Container != null)
+                    FrameLayout HomeScreenEmptyProduct = h.HomeScreenEmptyProduct as FrameLayout;
+                    if (HomeScreenEmptyProduct != null)
+                        HomeScreenEmptyProduct.Visibility = ViewStates.Visible;
+                }
+
+                if (this.isModeEditNow)
+                {
+                    //disini munculin yg kosong ada tanda plus
+                    if (h.HomeScreenEmptyProductOnEdit != null)
                     {
-                        ViewGroup.LayoutParams param = Container.LayoutParameters;
-                        param.Width = this.previousContainerSize;
-                        Container.LayoutParameters = param;
-                        //disini ukurannya diubah jadi semula
+                        FrameLayout HomeScreenEmptyProductOnEdit = h.HomeScreenEmptyProductOnEdit as FrameLayout;
+                        if (HomeScreenEmptyProductOnEdit != null)
+                            HomeScreenEmptyProductOnEdit.Visibility = ViewStates.Visible;
                     }
                 }
-                if (h.ItemContainer != null)
+                else
                 {
-                    FrameLayout ItemContainer = h.ItemContainer as FrameLayout;
-                    if (ItemContainer != null)
+                    //disini munculin yg kosong gk ada tanda plus
+                    if (h.HomeScreenEmptyProductNotOnEdit != null)
                     {
-                        ViewGroup.LayoutParams param = ItemContainer.LayoutParameters;
-                        param.Width = this.previousItemContainerSize;
-                        ItemContainer.LayoutParameters = param;
-                        //disini ukurannya diubah jadi semula
+                        LinearLayout HomeScreenEmptyProductNotOnEdit = h.HomeScreenEmptyProductNotOnEdit as LinearLayout;
+                        if (HomeScreenEmptyProductNotOnEdit != null)
+                            HomeScreenEmptyProductNotOnEdit.Visibility = ViewStates.Visible;
                     }
+                }
+            }
+            //disini untuk munculin tanda x di edit modenya
+            if (this.isModeEditNow)
+            {
+                int fragmentHeight = this.MainActivity.Window.DecorView.Height;
+                int fragmentWidth = this.MainActivity.Window.DecorView.Width;
+
+                int cardElevation = dpToPx((int)4);
+
+                int width = 0;
+                int height = 0;
+
+                var getLayoutManager = this.RecyclerView.GetLayoutManager();
+                RelativeLayout RelativeContainerToCustome = holder.ItemView.FindViewById<RelativeLayout>(Resource.Id.RelativeContainer);
+
+                width = (fragmentWidth) / 3;
+                height = ((fragmentHeight / 4) - (8 * 2) - (cardElevation * 8));
+                //height = ((fragmentHeight / 4) - (8 * 2) - (cardElevation * 9) - 15);
+
+                var gapBetweenHeightEditAndNot = height - this.MarginToLinearLayout;
+
+                height = height - gapBetweenHeightEditAndNot + 5;
+
+                if (h.RelativeContainer != null)
+                {
+                    RecyclerView.LayoutParams param = (RecyclerView.LayoutParams)h.RelativeContainer.LayoutParameters;
+                    param.Width = width;
+                    param.Height = height;
+                    param.BottomMargin = gapBetweenHeightEditAndNot;
+                    h.RelativeContainer.LayoutParameters = param;
+                    h.RelativeContainer.Visibility = ViewStates.Visible;
+                }
+                if (h.CardContainer != null)
+                {
+                    ViewGroup.LayoutParams param = h.CardContainer.LayoutParameters;
+                    param.Width = width;
+                    param.Height = height;
+                    h.CardContainer.LayoutParameters = param;
+                    h.CardContainer.Visibility = ViewStates.Visible;
+                }
+
+                if (!string.IsNullOrEmpty(itemProduct.ItemType))
+                {
+                    if (h.DeleteItems != null)
+                    {
+                        FrameLayout DeleteItems = h.DeleteItems as FrameLayout;
+                        if (DeleteItems != null)
+                            DeleteItems.Visibility = ViewStates.Visible;
+                    }
+                }
+            }
+
+            if (!this.isModeEditNow)
+            {
+                int fragmentHeight = this.MainActivity.Window.DecorView.Height;
+                int fragmentWidth = this.MainActivity.Window.DecorView.Width;
+                //int cardMargin = dpToPx((int)5);
+                int cardElevation = dpToPx((int)4);
+
+                if (h.CardContainer != null)
+                {
+                    ViewGroup.MarginLayoutParams param = (ViewGroup.MarginLayoutParams)h.CardContainer.LayoutParameters;
+                    this.MarginCardView = param.BottomMargin;
+                }
+                if (this.RecyclerView != null)
+                {
+                    RecyclerView.MarginLayoutParams param = (RecyclerView.MarginLayoutParams)this.RecyclerView.LayoutParameters;
+                    this.MarginCardView = param.BottomMargin;
+                }
+
+                int width = 0;
+                int height = 0;
+
+                var getLayoutManager = this.RecyclerView.GetLayoutManager();
+                RelativeLayout RelativeContainerToCustome = holder.ItemView.FindViewById<RelativeLayout>(Resource.Id.RelativeContainer);
+
+                width = (fragmentWidth) / 3;
+                height = ((fragmentHeight / 4) - (8 * 2) - (cardElevation * 9) - 15);
+
+                this.MarginToLinearLayout = height;
+
+                if (h.RelativeContainer != null)
+                {
+                    RecyclerView.LayoutParams param = (RecyclerView.LayoutParams)h.RelativeContainer.LayoutParameters;
+                    //var checkGap = param
+                    param.Width = width;
+                    param.Height = height;
+                    h.RelativeContainer.LayoutParameters = param;
+                    h.RelativeContainer.Visibility = ViewStates.Visible;
+                }
+                if (h.CardContainer != null)
+                {
+                    ViewGroup.LayoutParams param = h.CardContainer.LayoutParameters;
+                    //RecyclerView.LayoutParams param = (RecyclerView.LayoutParams)h.CardContainer.LayoutParameters;
+                    param.Width = width;
+                    param.Height = height;
+                    h.CardContainer.LayoutParameters = param;
+                    h.CardContainer.Visibility = ViewStates.Visible;
                 }
             }
         }
@@ -338,6 +531,13 @@ namespace SampleGrouping
             TextView GroupItemItemName4 = holder.ItemView.FindViewById(Resource.Id.ItemNameGrouping4) as TextView;
             FrameLayout Container = holder.ItemView.FindViewById(Resource.Id.Container) as FrameLayout;
             FrameLayout ItemContainer = holder.ItemView.FindViewById(Resource.Id.ItemContainer) as FrameLayout;
+            FrameLayout DeleteItems = holder.ItemView.FindViewById(Resource.Id.DeleteItems) as FrameLayout;
+
+            FrameLayout HomeScreenEmptyProduct = holder.ItemView.FindViewById(Resource.Id.HomeScreenEmptyProduct) as FrameLayout;
+            LinearLayout HomeScreenEmptyProductNotOnEdit = holder.ItemView.FindViewById(Resource.Id.HomeScreenEmptyProductNotOnEdit) as LinearLayout;
+            FrameLayout HomeScreenEmptyProductOnEdit = holder.ItemView.FindViewById(Resource.Id.HomeScreenEmptyProductOnEdit) as FrameLayout;
+            RelativeLayout RelativeContainer = holder.ItemView.FindViewById(Resource.Id.RelativeContainer) as RelativeLayout;
+            AndroidX.CardView.Widget.CardView CardContainer = holder.ItemView.FindViewById(Resource.Id.CardContainer) as AndroidX.CardView.Widget.CardView;
             //ViewGroup IndicatorGrouping = holder.ItemView.FindViewById(Resource.Id.IndicatorGrouping) as ViewGroup;
 
             if (NonGroupItemSection != null)
@@ -351,7 +551,7 @@ namespace SampleGrouping
             //holder.Views.Add("GroupItemSection", GroupItemSection);
             if (GroupItemItemName1 != null)
                 holder.GroupItemItemName1 = GroupItemItemName1;
-                //holder.Views.Add("GroupItemItemName1", GroupItemItemName1);
+            //holder.Views.Add("GroupItemItemName1", GroupItemItemName1);
             if (GroupItemItemName2 != null)
                 holder.GroupItemItemName2 = GroupItemItemName2;
             //holder.Views.Add("GroupItemItemName2", GroupItemItemName2);
@@ -364,37 +564,90 @@ namespace SampleGrouping
                 holder.Container = Container;
             if (ItemContainer != null)
                 holder.ItemContainer = ItemContainer;
+            if (DeleteItems != null)
+                holder.DeleteItems = DeleteItems;
+            if (HomeScreenEmptyProduct != null)
+                holder.HomeScreenEmptyProduct = HomeScreenEmptyProduct;
+            if (HomeScreenEmptyProductNotOnEdit != null)
+                holder.HomeScreenEmptyProductNotOnEdit = HomeScreenEmptyProductNotOnEdit;
+            if (HomeScreenEmptyProductOnEdit != null)
+                holder.HomeScreenEmptyProductOnEdit = HomeScreenEmptyProductOnEdit;
+            if (RelativeContainer != null)
+                holder.RelativeContainer = RelativeContainer;
+            if (CardContainer != null)
+                holder.CardContainer = CardContainer;
 
-            if (holder != null)
-            {
-                Context context = this.MainActivity;
+            //if (holder != null)
+            //{
+            //    Context context = this.MainActivity;
 
-                int fragmentHeight = this.MainActivity.Window.DecorView.Height;
-                int fragmentWidth = this.MainActivity.Window.DecorView.Width;
-                int cardMargin = dpToPx((int)4);
-                int cardElevation = dpToPx((int)4);
+            //    int fragmentHeight = this.MainActivity.Window.DecorView.Height;
+            //    int fragmentWidth = this.MainActivity.Window.DecorView.Width;
+            //    int cardMargin = dpToPx((int)5);
+            //    int cardElevation = dpToPx((int)4);
 
-                int width = 0;
-                int height = 0;
-                width = (int)((fragmentWidth / 3) - (8 * 2) - cardElevation - 5);
-                height = (int)((fragmentHeight / 4) - (8 * 2) - (cardElevation * 9) - 15);
+            //    int width = 0;
+            //    int height = 0;
 
-                //Intersoft.Crosslight.Android.v7.CardView container = holder.ContentView.FindViewById<Intersoft.Crosslight.Android.v7.CardView>(Resource.Id.container);
-                AndroidX.CardView.Widget.CardView container = holder.ItemView.FindViewById<AndroidX.CardView.Widget.CardView>(Resource.Id.CardContainer);
+            //    var getLayoutManager = this.RecyclerView.GetLayoutManager();
+            //    RelativeLayout RelativeContainerToCustome = holder.ItemView.FindViewById<RelativeLayout>(Resource.Id.RelativeContainer);
+            //    //var spaceBetweenRow = 0;
 
-                if (container != null)
-                {
-                    ViewGroup.LayoutParams param = container.LayoutParameters;
-                    param.Width = width;
-                    param.Height = height;
-                    container.LayoutParameters = param;
-                }
+            //    //if ((this.RecyclerView.GetLayoutManager() as GridLayoutManager).Orientation == GridLayoutManager.Vertical)
+            //    //{
+            //    //    spaceBetweenRow = 3 * 5;
+            //    //}
+            //    //else
+            //    //{
+            //    //    spaceBetweenRow = 0;
+            //    //}
 
-                //int height = (int)((fragmentHeight / 3) - 5);
+            //    var BottomMargin = 0;
+            //    var TopMargin = 0;
 
-            }
+            //    if (RelativeContainerToCustome != null)
+            //    {
+            //        RecyclerView.LayoutParams param = (RecyclerView.LayoutParams)RelativeContainerToCustome.LayoutParameters;
+            //        BottomMargin = param.BottomMargin;
+            //        TopMargin = param.TopMargin;
+            //    }
+
+            //    width = (fragmentWidth) / 3;
+            //    // width = (int)((fragmentWidth / 3) - (8 * 2) - cardElevation - 5);
+            //    //height = (int)((fragmentHeight / 4) - (8 * 2) - (cardElevation * 9) - 15);
+            //    height = ((fragmentHeight / 4) - (8 * 2) - (cardElevation * 9) - 15);
+
+            //    //Intersoft.Crosslight.Android.v7.CardView container = holder.ContentView.FindViewById<Intersoft.Crosslight.Android.v7.CardView>(Resource.Id.container);
+            //    AndroidX.CardView.Widget.CardView container = holder.ItemView.FindViewById<AndroidX.CardView.Widget.CardView>(Resource.Id.CardContainer);
+
+            //    if (container != null)
+            //    {
+            //        ViewGroup.LayoutParams param = container.LayoutParameters;
+            //        param.Width = width;
+            //        param.Height = height;
+            //        container.LayoutParameters = param;
+            //    }
+
+            //    if (RelativeContainerToCustome != null)
+            //    {
+            //        RecyclerView.LayoutParams param = (RecyclerView.LayoutParams)RelativeContainerToCustome.LayoutParameters;
+            //        param.Width = width;
+            //        param.Height = height;
+            //        //param.SetMargins(0, 0, 0, 0);
+
+            //        RelativeContainerToCustome.LayoutParameters = param;
+            //    }
+
+            //    //int height = (int)((fragmentHeight / 3) - 5);
+
+            //}
 
             return holder;
+        }
+
+        public void SetMode(bool value)
+        {
+            this.isModeEditNow = value;
         }
 
         public int dpToPx(int dp)
@@ -437,124 +690,96 @@ namespace SampleGrouping
             //var getItemFrom = this.Items.FirstOrDefault(o => o.Position == From);
             //var getFirstItemTo = this.Items.FirstOrDefault(o => o.Position == To);
             //var getItemTo = this.Items.Where(o => o.Position == To);
-            var getItemFrom = this.data.FirstOrDefault(o => o.itemPosition == fromPosition);
-            var getFirstItemTo = this.data.FirstOrDefault(o => o.itemPosition == toPosition);
-            var getItemTo = this.data.Where(o => o.itemPosition == toPosition);
+            var getItemFrom = this.data.FirstOrDefault(o => o.ItemPosition == fromPosition);
+            var getFirstItemTo = this.data.FirstOrDefault(o => o.ItemPosition == toPosition);
+            var getItemTo = this.data.Where(o => o.ItemPosition == toPosition);
             string GroupName = "Grouping";
 
             if (getItemFrom != null && getFirstItemTo != null && getItemTo != null)
             {
-                if (!string.IsNullOrEmpty(getItemFrom.itemType) && string.IsNullOrEmpty(getItemFrom.groupName))
+                if (!string.IsNullOrEmpty(getItemFrom.ItemType) && string.IsNullOrEmpty(getItemFrom.GroupName))
                 {
-                    if (!string.IsNullOrEmpty(getFirstItemTo.itemType))
+                    if (!string.IsNullOrEmpty(getFirstItemTo.ItemType))
                     {
-                        getItemFrom.itemPosition = toPosition;
-                        if (getFirstItemTo.groupName != "" || !string.IsNullOrEmpty(getFirstItemTo.groupName))
-                            getItemFrom.groupName = getFirstItemTo.groupName;
+                        getItemFrom.ItemPosition = toPosition;
+                        if (getFirstItemTo.GroupName != "" || !string.IsNullOrEmpty(getFirstItemTo.GroupName))
+                            getItemFrom.GroupName = getFirstItemTo.GroupName;
                         else
-                            getItemFrom.groupName = GroupName;
+                            getItemFrom.GroupName = GroupName;
 
                         foreach (var itemTo in getItemTo)
                         {
-                            if (string.IsNullOrEmpty(itemTo.groupName))
-                                itemTo.groupName = GroupName;
+                            if (string.IsNullOrEmpty(itemTo.GroupName))
+                                itemTo.GroupName = GroupName;
                         }
                     }
                 }
-                //if (getItemFrom.ItemType != null && !string.IsNullOrEmpty(getItemFrom.ItemType) && string.IsNullOrEmpty(getItemFrom.GroupName))
-                //{
-                //    if (getFirstItemTo.ItemType != null && !string.IsNullOrEmpty(getFirstItemTo.ItemType))
-                //    {
-                //        getItemFrom.Position = To;
-                //        //getItemFrom.GroupId = newGroupId;
-                //        getItemFrom.ModifiedBy = createdBy;
-                //        getItemFrom.ModifiedDate = DateTime.Now;
-                //        if (getFirstItemTo.GroupName != "" || !string.IsNullOrEmpty(getFirstItemTo.GroupName))
-                //            getItemFrom.GroupName = getFirstItemTo.GroupName;
-                //        else
-                //            getItemFrom.GroupName = GroupName;
-
-                //        this.Repository.Update(getItemFrom);
-
-                //        foreach (var itemTo in getItemTo)
-                //        {
-                //            if (itemTo.GroupName == "" || string.IsNullOrEmpty(itemTo.GroupName))
-                //            {
-                //                itemTo.GroupName = GroupName;
-                //                //itemTo.GroupId = newGroupId;
-                //                itemTo.ModifiedBy = createdBy;
-                //                itemTo.ModifiedDate = DateTime.Now;
-                //                this.Repository.Update(itemTo);
-                //            }
-                //        }
-                //    }
-                //}
             }
 
             this.NotifyDataSetChanged();
         }
 
-        public List<Data> getDataAdapter()
+        public List<HomeScreenMenuItem> getDataAdapter()
         {
             return this.data;
         }
 
         public bool LoadDataAfterGrouping()
         {
-            List<Data> dataSource = this.data.ToList();
-            List<Data> newDataGenerated = new List<Data>();
+            List<HomeScreenMenuItem> dataSource = this.data.ToList();
+            List<HomeScreenMenuItem> newDataGenerated = new List<HomeScreenMenuItem>();
 
             for(int x = 0; x < dataSource.Count(); x++)
             {
                 //List<HomeScreenMenuItem> findItemInResult = homeScreenItemResult.Where(o => o.Position == x && o.IsDeleted == false).ToList();
-                List<Data> findItemInDataSource = this.data.Where(o => o.itemPosition == x).ToList();
+                List<HomeScreenMenuItem> findItemInDataSource = this.data.Where(o => o.ItemPosition == x).ToList();
                 
                 if (findItemInDataSource.Count() > 0)
                 {
-                    foreach(Data item in findItemInDataSource)
+                    foreach(HomeScreenMenuItem item in findItemInDataSource)
                     {
                         if (item != null)
                         {
-                            if (!string.IsNullOrEmpty(item.groupName))
+                            if (!string.IsNullOrEmpty(item.GroupName))
                             {
                                 //List<HomeScreenMenuItem> getGroupItem = homeScreenItemResult.Where(o => o.Position == item.Position).ToList();
-                                List<Data> getGroupItemInDataSource = dataSource.Where(o => o.itemPosition == item.itemPosition).ToList();
+                                List<HomeScreenMenuItem> getGroupItemInDataSource = dataSource.Where(o => o.ItemPosition == item.ItemPosition).ToList();
 
                                 foreach(var eachItem in getGroupItemInDataSource)
                                 {
-                                    if (!this.GroupDictionary.ContainsKey(eachItem.itemPosition))
-                                        this.GroupDictionary.Add(eachItem.itemPosition, getGroupItemInDataSource);
-                                    if (this.GroupDictionary.ContainsKey(eachItem.itemPosition))
+                                    if (!this.GroupDictionary.ContainsKey(eachItem.ItemPosition))
+                                        this.GroupDictionary.Add(eachItem.ItemPosition, getGroupItemInDataSource);
+                                    if (this.GroupDictionary.ContainsKey(eachItem.ItemPosition))
                                     {
-                                        if (!this.GroupDictionary[eachItem.itemPosition].Contains(eachItem))
-                                            this.GroupDictionary[eachItem.itemPosition].Add(eachItem);
+                                        if (!this.GroupDictionary[eachItem.ItemPosition].Contains(eachItem))
+                                            this.GroupDictionary[eachItem.ItemPosition].Add(eachItem);
                                     }
                                 }
 
                                 var LastItemInThisGroup = getGroupItemInDataSource.Last();
 
-                                if (item.itemId == LastItemInThisGroup.itemId)
+                                if (item.HomeScreenMenuItemId == LastItemInThisGroup.HomeScreenMenuItemId)
                                 {
-                                    item.listGroupItemName = new List<string>();
+                                    item.ListGroupItemName = new List<string>();
 
-                                    List<Data> itemsInDictionary = this.GroupDictionary[item.itemPosition];
+                                    List<HomeScreenMenuItem> itemsInDictionary = this.GroupDictionary[item.ItemPosition];
 
-                                    foreach(Data itemInDictionary in itemsInDictionary)
+                                    foreach(HomeScreenMenuItem itemInDictionary in itemsInDictionary)
                                     {
-                                        if (itemInDictionary.itemId != item.itemId)
+                                        if (itemInDictionary.HomeScreenMenuItemId != item.HomeScreenMenuItemId)
                                         {
-                                            if (itemInDictionary.itemType == "product")
+                                            if (itemInDictionary.ItemType == "product")
                                             {
-                                                if (itemInDictionary.itemName != null)
-                                                    item.listGroupItemName.Add(itemInDictionary.itemName);
+                                                if (itemInDictionary.ItemName != null)
+                                                    item.ListGroupItemName.Add(itemInDictionary.ItemName);
                                             }
                                         }
                                         else
                                         {
-                                            if (item.itemType == "product")
+                                            if (item.ItemType == "product")
                                             {
-                                                if (item.itemName != null)
-                                                    item.listGroupItemName.Add(item.itemName);
+                                                if (item.ItemName != null)
+                                                    item.ListGroupItemName.Add(item.ItemName);
                                             }
                                         }
                                     }
@@ -576,6 +801,11 @@ namespace SampleGrouping
 
             return true;
         }
+
+        public void AddItems()
+        {
+           // var countData = 
+        }
         public override int ItemCount
         {
             get { return data.Count(); }
@@ -596,6 +826,12 @@ namespace SampleGrouping
             public TextView GroupItemItemName4;
             public FrameLayout Container;
             public FrameLayout ItemContainer;
+            public FrameLayout DeleteItems;
+            public FrameLayout HomeScreenEmptyProduct;
+            public LinearLayout HomeScreenEmptyProductNotOnEdit;
+            public FrameLayout HomeScreenEmptyProductOnEdit;
+            public RelativeLayout RelativeContainer;
+            public AndroidX.CardView.Widget.CardView CardContainer;
             //public ViewGroup IndicatorGrouping;
             public object Item { get; set; }
             public Dictionary<string, View> Views { get; }
@@ -612,6 +848,12 @@ namespace SampleGrouping
                 GroupItemItemName4 = itemView.FindViewById<TextView>(Resource.Id.ItemNameGrouping4);
                 Container = itemView.FindViewById<FrameLayout>(Resource.Id.Container);
                 ItemContainer = itemView.FindViewById<FrameLayout>(Resource.Id.ItemContainer);
+                DeleteItems = itemView.FindViewById<FrameLayout>(Resource.Id.DeleteItems);
+                HomeScreenEmptyProduct = itemView.FindViewById<FrameLayout>(Resource.Id.HomeScreenEmptyProduct);
+                HomeScreenEmptyProductNotOnEdit = itemView.FindViewById<LinearLayout>(Resource.Id.HomeScreenEmptyProductNotOnEdit);
+                HomeScreenEmptyProductOnEdit = itemView.FindViewById<FrameLayout>(Resource.Id.HomeScreenEmptyProductOnEdit);
+                RelativeContainer = itemView.FindViewById<RelativeLayout>(Resource.Id.RelativeContainer);
+                CardContainer = itemView.FindViewById<AndroidX.CardView.Widget.CardView>(Resource.Id.CardContainer);
             }
         }
     }

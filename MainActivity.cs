@@ -12,15 +12,27 @@ using System.Collections.Generic;
 
 namespace SampleGrouping
 {
-    public class Data 
+    public class HomeScreenMenuItem
     { 
-        public bool isIndicatorShow { get; set; }
-        public int itemId { get; set; }
-        public string itemName { get; set; }
-        public string itemType { get; set; }
-        public int itemPosition { get; set; }
-        public List<string> listGroupItemName { get; set; }
-        public string groupName { get; set; }
+        public Guid HomeScreenMenuId { get; set; }
+        public Guid HomeScreenMenuItemId { get; set; }
+        public string ItemName { get; set; }
+        public string ItemType { get; set; }
+        public int ItemPosition { get; set; }
+        //public int UserItemPosition
+        //{
+        //    //int posUser = (pageCount * 12) + ((Position % 12) / row) + ((Position % row) * column);
+        //    get { return }
+        //}
+        public List<string> ListGroupItemName { get; set; }
+        public string GroupName { get; set; }
+        public bool IsDeleted { get; set; }
+    }
+    public class HomeScreenMenu
+    {
+        public Guid homeScreenMenuId { get; set; }
+        public int pageSize { get; set; }
+        public List<HomeScreenMenuItem> homeScreenMenuItem { get; set; }
     }
 
     [Activity(Label = "@string/app_name", Theme = "@style/AppTheme.NoActionBar", MainLauncher = true)]
@@ -28,7 +40,9 @@ namespace SampleGrouping
     {
         private RecyclerView recyclerView;
         private MyAdapter mAdapter;
-        List<Data> listData = new List<Data>();
+        HomeScreenMenu homeScreenMenu = new HomeScreenMenu();
+        List<HomeScreenMenuItem> listData = new List<HomeScreenMenuItem>();
+
         
         protected override void OnCreate(Bundle savedInstanceState)
         {
@@ -43,31 +57,43 @@ namespace SampleGrouping
             SetSupportActionBar(toolbar);
 
             recyclerView = FindViewById<RecyclerView>(Resource.Id.recyclerView);
-            recyclerView.SetLayoutManager(new GridLayoutManager(this, 3, GridLayoutManager.Vertical, false));
+            recyclerView.SetLayoutManager(new GridLayoutManager(this, 4, GridLayoutManager.Horizontal, false));
 
             PopulateRecyclerView();
         }
 
         public void PopulateRecyclerView()
         {
-            listData.Add(new Data { itemId = 1, itemName = "item 1", itemPosition = 0, groupName = "", itemType= "product", listGroupItemName = { } });
-            listData.Add(new Data { itemId = 2, itemName = "item 2", itemPosition = 1, groupName = "", itemType = "product", listGroupItemName = { } });
-            listData.Add(new Data { itemId = 3, itemName = "item 3", itemPosition = 2, groupName = "", itemType = "product", listGroupItemName = { } });
-            listData.Add(new Data { itemId = 4, itemName = "item 4", itemPosition = 3, groupName = "", itemType = "product", listGroupItemName = { } });
-            listData.Add(new Data { itemId = 5, itemName = "item 5", itemPosition = 4, groupName = "", itemType = "product", listGroupItemName = { } });
-            listData.Add(new Data { itemId = 6, itemName = "item 6", itemPosition = 5, groupName = "", itemType = "product", listGroupItemName = { } });
-            listData.Add(new Data { itemId = 7, itemName = "item 7", itemPosition = 6, groupName = "", itemType = "product", listGroupItemName = { } });
-            listData.Add(new Data { itemId = 8, itemName = "item 8", itemPosition = 7, groupName = "", itemType = "product", listGroupItemName = { } });
-            listData.Add(new Data { itemId = 9, itemName = "item 9", itemPosition = 8, groupName = "", itemType = "product", listGroupItemName = { } });
-            listData.Add(new Data { itemId = 10, itemName = "item 10", itemPosition = 9, groupName = "", itemType = "product", listGroupItemName = { } });
-            listData.Add(new Data { itemId = 11, itemName = "item 11", itemPosition = 10, groupName = "", itemType = "product", listGroupItemName = { } });
-            listData.Add(new Data { itemId = 12, itemName = "item 12", itemPosition = 11, groupName = "", itemType = "product", listGroupItemName = { } });
+            listData.Add(new HomeScreenMenuItem { HomeScreenMenuItemId = Guid.NewGuid(), ItemName = "item 1", ItemPosition = 0, GroupName = "", ItemType= "product", ListGroupItemName = { }, IsDeleted =false });
+            listData.Add(new HomeScreenMenuItem { HomeScreenMenuItemId = Guid.NewGuid(), ItemName = "item 2", ItemPosition = 1, GroupName = "", ItemType = "product", ListGroupItemName = { }, IsDeleted = false });
+            listData.Add(new HomeScreenMenuItem { HomeScreenMenuItemId = Guid.NewGuid(), ItemName = "item 3", ItemPosition = 2, GroupName = "", ItemType = "product", ListGroupItemName = { }, IsDeleted = false });
+            listData.Add(new HomeScreenMenuItem { HomeScreenMenuItemId = Guid.NewGuid(), ItemName = "item 4", ItemPosition = 3, GroupName = "", ItemType = "product", ListGroupItemName = { }, IsDeleted = false });
+            listData.Add(new HomeScreenMenuItem { HomeScreenMenuItemId = Guid.NewGuid(), ItemName = "item 5", ItemPosition = 4, GroupName = "", ItemType = "product", ListGroupItemName = { }, IsDeleted = false });
+            listData.Add(new HomeScreenMenuItem { HomeScreenMenuItemId = Guid.NewGuid(), ItemName = "item 6", ItemPosition = 5, GroupName = "", ItemType = "product", ListGroupItemName = { }, IsDeleted = false });
+            listData.Add(new HomeScreenMenuItem { HomeScreenMenuItemId = Guid.NewGuid(), ItemName = "item 7", ItemPosition = 6, GroupName = "", ItemType = "product", ListGroupItemName = { }, IsDeleted = false });
+            listData.Add(new HomeScreenMenuItem { HomeScreenMenuItemId = Guid.NewGuid(), ItemName = "item 8", ItemPosition = 7, GroupName = "", ItemType = "product", ListGroupItemName = { }, IsDeleted = false });
+            listData.Add(new HomeScreenMenuItem { HomeScreenMenuItemId = Guid.NewGuid(), ItemName = "item 9", ItemPosition = 8, GroupName = "", ItemType = "product", ListGroupItemName = { }, IsDeleted = false });
+            listData.Add(new HomeScreenMenuItem { HomeScreenMenuItemId = Guid.NewGuid(), ItemName = "item 10", ItemPosition = 9, GroupName = "", ItemType = "product", ListGroupItemName = { }, IsDeleted = false });
+            listData.Add(new HomeScreenMenuItem { HomeScreenMenuItemId = Guid.NewGuid(), ItemName = "item 11", ItemPosition = 10, GroupName = "", ItemType = "product", ListGroupItemName = { }, IsDeleted = false });
+            listData.Add(new HomeScreenMenuItem { HomeScreenMenuItemId = Guid.NewGuid(), ItemName = "item 12", ItemPosition = 11, GroupName = "", ItemType = "product", ListGroupItemName = { }, IsDeleted = false });
+            listData.Add(new HomeScreenMenuItem { HomeScreenMenuItemId = Guid.NewGuid(), ItemName = "item 13", ItemPosition = 12, GroupName = "", ItemType = "product", ListGroupItemName = { }, IsDeleted = false });
 
-            mAdapter = new MyAdapter(listData, this);
+
+            homeScreenMenu.homeScreenMenuId = Guid.NewGuid();
+            homeScreenMenu.pageSize = 2;
+            homeScreenMenu.homeScreenMenuItem = new List<HomeScreenMenuItem>();
+            foreach (var item in listData)
+            {
+                item.HomeScreenMenuId = homeScreenMenu.homeScreenMenuId;
+                homeScreenMenu.homeScreenMenuItem.Add(item);
+            }
+
+            mAdapter = new MyAdapter(listData, this, homeScreenMenu, recyclerView);
 
             ItemTouchHelper.Callback callback = new ItemMoveCallback(mAdapter, recyclerView, this);
             ItemTouchHelper touchHelper = new ItemTouchHelper(callback);
             touchHelper.AttachToRecyclerView(recyclerView);
+            //this.SetLayoutTypeCore(true);
 
             recyclerView.SetAdapter(mAdapter);
         }
@@ -76,10 +102,6 @@ namespace SampleGrouping
         {
             if (recyclerView != null)
             {
-                //this.RecyclerView.ItemLayoutId = Resource.Layout.product_list_grid_item_layout;
-
-                //GridLayoutManager gridLayoutManager = new GridLayoutManager(this.Activity, 3, GridLayoutManager.Horizontal, false);
-
                 if (recyclerView != null)
                 {
                     //this.RecyclerView.SetLayoutManager(gridLayoutManager, refreshAdapter);
@@ -89,17 +111,48 @@ namespace SampleGrouping
             }
         }
 
+        public IMenu DataMenu { get; set; }
         public override bool OnCreateOptionsMenu(IMenu menu)
         {
             MenuInflater.Inflate(Resource.Menu.menu_main, menu);
+            this.DataMenu = menu;
             return true;
         }
 
         public override bool OnOptionsItemSelected(IMenuItem item)
         {
             int id = item.ItemId;
-            if (id == Resource.Id.action_settings)
+            if (id == Resource.Id.edit_menu)
             {
+                var findAddItemMenu = this.DataMenu.FindItem(Resource.Id.add_item);
+                findAddItemMenu.SetVisible(true);
+                mAdapter.SetMode(true);
+                
+                recyclerView.SetLayoutManager(new GridLayoutManager(this, 3, GridLayoutManager.Vertical, false));
+
+                mAdapter.NotifyDataSetChanged();
+
+                //disni panggil yang untuk ubah jadi edit modenya
+                return true;
+            }
+            if (id == Resource.Id.save_menu)
+            {
+                var findAddItemMenu = this.DataMenu.FindItem(Resource.Id.add_item);
+                findAddItemMenu.SetVisible(false);
+                mAdapter.SetMode(false);
+
+                recyclerView.SetLayoutManager(new GridLayoutManager(this, 4, GridLayoutManager.Horizontal, false));
+
+                mAdapter.NotifyDataSetChanged();
+                //disini panggil yg untuk save itemnya
+
+                return true;
+            }
+            if (id == Resource.Id.add_item)
+            {
+                mAdapter.AddItems();
+                mAdapter.NotifyDataSetChanged();
+                //disini handle untuk add itemsnya
                 return true;
             }
 
@@ -189,19 +242,19 @@ namespace SampleGrouping
 
             if (diffX <= 5 || diffY <= 5)
             {
-                List<Data> AdapterData = mAdapter.getDataAdapter();
+                List<HomeScreenMenuItem> AdapterData = mAdapter.getDataAdapter();
                 var item = AdapterData[target.AdapterPosition];
 
-                item.isIndicatorShow = true;
+                //item.isIndicatorShow = true;
                 this.ActionDragTodo = false;
                 this.Adapter.NotifyItemChanged(target.LayoutPosition);
             }
             else if (diffX > 5 || diffY > 5)
             {
-                List<Data> AdapterData = mAdapter.getDataAdapter();
+                List<HomeScreenMenuItem> AdapterData = mAdapter.getDataAdapter();
                 var item = AdapterData[target.AdapterPosition];
 
-                item.isIndicatorShow = false;
+                //item.isIndicatorShow = false;
                 this.ActionDragTodo = true;
                 this.Adapter.NotifyItemMoved(viewHolder.AdapterPosition, target.AdapterPosition);
             }
@@ -234,10 +287,10 @@ namespace SampleGrouping
                         mAdapter.OnGrouping(this.dataFrom, this.dataTo);
                         mAdapter.LoadDataAfterGrouping();
 
-                        List<Data> AdapterData = mAdapter.getDataAdapter();
+                        List<HomeScreenMenuItem> AdapterData = mAdapter.getDataAdapter();
                         var item = AdapterData[this.dataTo];
 
-                        item.isIndicatorShow = false;
+                        //item.isIndicatorShow = false;
                     }
                     this.Adapter.NotifyItemChanged(this.dataTo);
 
@@ -251,7 +304,7 @@ namespace SampleGrouping
             public void OnGrouping(int fromPosition, int toPosition);
             public bool LoadDataAfterGrouping();
             public void SetDataToShowGroupingIndicator(int TargetPosition, bool IsTargetIndicatorGroupingShowed);
-            public List<Data> getDataAdapter();
+            public List<HomeScreenMenuItem> getDataAdapter();
         }
     }
 }
