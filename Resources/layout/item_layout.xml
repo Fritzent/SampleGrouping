@@ -51,11 +51,11 @@
                             android:layout_height="32dp"
                             android:src="@drawable/ic_plus"
                             android:layout_gravity="center"/>
-                        <Button
+                        <!--<Button
                             android:id="@+id/ButtonAddItems"
                             android:layout_width="match_parent"
                             android:layout_height="match_parent"
-                            android:background="@drawable/ripple_transparent"/>
+                            android:background="@drawable/ripple_transparent"/>-->
                     </FrameLayout>
                 </FrameLayout>
                 <LinearLayout
@@ -124,10 +124,10 @@
             android:layout_height="match_parent"
             android:src="@drawable/ic_remove"
             android:id="@+id/ImageDelete"/>
-        <Button
+        <!--<Button
             android:id="@+id/ButtonDeleteRecyclerview"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:background="@android:color/transparent"/>
+            android:background="@android:color/transparent"/>-->
     </FrameLayout>
 </RelativeLayout>

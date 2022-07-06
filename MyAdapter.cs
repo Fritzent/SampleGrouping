@@ -14,7 +14,7 @@ using System.Text;
 
 namespace SampleGrouping
 {
-    public class MyAdapter : RecyclerView.Adapter, ItemMoveCallback.ItemTouchHelperContract
+    public class MyAdapter : RecyclerView.Adapter, ItemMoveCallback.ItemTouchHelperContract, View.IOnClickListener
     {
         #region Fields
         private Dictionary<int, List<HomeScreenMenuItem>> _groupingDictionary;
@@ -66,6 +66,7 @@ namespace SampleGrouping
         public MainActivity MainActivity { get; set; }
         public bool isModeEditNow { get; set; }
         public RecyclerView RecyclerView { get; set; }
+        public HomeScreenMenu HomeScreenMenu { get; set; }
         #endregion
 
         public MyAdapter(List<HomeScreenMenuItem> data, MainActivity mainActivity, HomeScreenMenu homeScreenMenu, RecyclerView recyclerView)
@@ -75,6 +76,8 @@ namespace SampleGrouping
             this.LoadData(data, homeScreenMenu);
             this.MainActivity = mainActivity;
             this.RecyclerView = recyclerView;
+            this.HomeScreenMenu = homeScreenMenu;
+
         }
 
         public void LoadData(List<HomeScreenMenuItem> data, HomeScreenMenu homeScreenMenu)
@@ -151,9 +154,9 @@ namespace SampleGrouping
                 {
                     HomeScreenMenuItem emptyItem = new HomeScreenMenuItem();
                     emptyItem.ItemPosition = i;
-                    emptyItem.ItemName = "New Item" + i;
+                    //emptyItem.ItemName = "New Item" + i;
                     emptyItem.HomeScreenMenuItemId = Guid.NewGuid();
-                    emptyItem.ItemType = "product";
+                    //emptyItem.ItemType = "product";
                     emptyItem.HomeScreenMenuId = homeScreenMenu.homeScreenMenuId;
 
                     itemGenerated.Add(emptyItem);
@@ -239,7 +242,10 @@ namespace SampleGrouping
                 {
                     FrameLayout DeleteItems = h.DeleteItems as FrameLayout;
                     if (DeleteItems != null)
+                    {
                         DeleteItems.Visibility = ViewStates.Gone;
+                        DeleteItems.SetOnClickListener(null);
+                    }
                 }
                 if (h.HomeScreenEmptyProduct != null)
                 {
@@ -257,7 +263,11 @@ namespace SampleGrouping
                 {
                     FrameLayout HomeScreenEmptyProductOnEdit = h.HomeScreenEmptyProductOnEdit as FrameLayout;
                     if (HomeScreenEmptyProductOnEdit != null)
+                    {
                         HomeScreenEmptyProductOnEdit.Visibility = ViewStates.Gone;
+                        HomeScreenEmptyProductOnEdit.SetOnClickListener(null);
+                    }
+
                 }
                 if (h.RelativeContainer != null)
                 {
@@ -402,7 +412,11 @@ namespace SampleGrouping
                     {
                         FrameLayout HomeScreenEmptyProductOnEdit = h.HomeScreenEmptyProductOnEdit as FrameLayout;
                         if (HomeScreenEmptyProductOnEdit != null)
+                        {
                             HomeScreenEmptyProductOnEdit.Visibility = ViewStates.Visible;
+                            HomeScreenEmptyProductOnEdit.Tag = itemProduct.ItemPosition;
+                            HomeScreenEmptyProductOnEdit.SetOnClickListener(this);
+                        }
                     }
                 }
                 else
@@ -462,7 +476,11 @@ namespace SampleGrouping
                     {
                         FrameLayout DeleteItems = h.DeleteItems as FrameLayout;
                         if (DeleteItems != null)
+                        {
                             DeleteItems.Visibility = ViewStates.Visible;
+                            DeleteItems.Tag = itemProduct.ItemPosition;
+                            DeleteItems.SetOnClickListener(this);
+                        }
                     }
                 }
             }
@@ -484,6 +502,11 @@ namespace SampleGrouping
                     RecyclerView.MarginLayoutParams param = (RecyclerView.MarginLayoutParams)this.RecyclerView.LayoutParameters;
                     this.MarginCardView = param.BottomMargin;
                 }
+                if (h.RelativeContainer != null)
+                {
+                    ViewGroup.MarginLayoutParams param = (ViewGroup.MarginLayoutParams)h.RelativeContainer.LayoutParameters;
+                    this.MarginCardView = param.BottomMargin;
+                }
 
                 int width = 0;
                 int height = 0;
@@ -492,7 +515,7 @@ namespace SampleGrouping
                 RelativeLayout RelativeContainerToCustome = holder.ItemView.FindViewById<RelativeLayout>(Resource.Id.RelativeContainer);
 
                 width = (fragmentWidth) / 3;
-                height = ((fragmentHeight / 4) - (8 * 2) - (cardElevation * 9) - 15);
+                height = ((fragmentHeight / 4) - (8 * 2) - (cardElevation * 9));
 
                 this.MarginToLinearLayout = height;
 
@@ -515,6 +538,46 @@ namespace SampleGrouping
                     h.CardContainer.Visibility = ViewStates.Visible;
                 }
             }
+        }
+
+        public void OnClick(View v)
+        {
+            switch(v.Id)
+            {
+                case Resource.Id.HomeScreenEmptyProductOnEdit:
+                    this.AddItems((int)v.Tag);
+                    break;
+                case Resource.Id.DeleteItems:
+                    this.DeleteItems((int)v.Tag);
+                    break;
+            }
+        }
+
+        public void AddItems(int Position)
+        {
+            List<HomeScreenMenuItem> getItemsInPosition = this.data.Where(o => o.ItemPosition == Position).ToList();
+
+            if (getItemsInPosition.Count > 0)
+            {
+                foreach (HomeScreenMenuItem item in getItemsInPosition)
+                {
+                    item.ItemName = "NewItems" + item.ItemPosition;
+                    item.IsDeleted = false;
+                    item.ItemType = "product";
+                    item.HomeScreenMenuItemId = Guid.NewGuid();
+                    item.HomeScreenMenuId = this.HomeScreenMenu.homeScreenMenuId;
+                }
+            }
+            this.NotifyItemChanged(Position);
+        }
+        public void DeleteItems(int Position)
+        {
+            List<HomeScreenMenuItem> itemToDelete = this.data.Where(o => o.ItemPosition == Position).ToList();
+            foreach (HomeScreenMenuItem item in itemToDelete)
+                item.IsDeleted = true;
+
+            this.LoadData(this.data, this.HomeScreenMenu);
+            this.NotifyItemChanged(Position);
         }
 
         public override RecyclerView.ViewHolder OnCreateViewHolder(ViewGroup parent, int viewType)

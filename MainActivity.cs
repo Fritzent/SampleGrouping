@@ -42,8 +42,21 @@ namespace SampleGrouping
         private MyAdapter mAdapter;
         HomeScreenMenu homeScreenMenu = new HomeScreenMenu();
         List<HomeScreenMenuItem> listData = new List<HomeScreenMenuItem>();
+        public Android.Widget.LinearLayout PageIndicatorNotEdit;
+        public Android.Widget.LinearLayout PageIndicatorOnEdit;
+        public Android.Widget.LinearLayout PinContainer;
+        List<Android.Widget.LinearLayout> DotDictionary { get; set; }
+        public OnScrollListener OnScrollListeners { get; set; }
+        private ItemTouchHelper _mItemTouchHelper;
+        public Android.Widget.TextView PageNumberText;
 
-        
+        protected override void OnRestoreInstanceState(Bundle savedInstanceState)
+        {
+            base.OnRestoreInstanceState(savedInstanceState);
+            if (this.mAdapter != null || this.mAdapter == null)
+                this.mAdapter = new MyAdapter(this.listData, this, this.homeScreenMenu, this.recyclerView);
+        }
+
         protected override void OnCreate(Bundle savedInstanceState)
         {
             base.OnCreate(savedInstanceState);
@@ -54,14 +67,28 @@ namespace SampleGrouping
             //this.GroupingIndicator = groupingIndicator;
 
             Toolbar toolbar = FindViewById<Toolbar>(Resource.Id.toolbar);
+            Android.Widget.LinearLayout pageIndicatorNotEdit = FindViewById<Android.Widget.LinearLayout>(Resource.Id.PageIndicatorNotOnEdit);
+            pageIndicatorNotEdit.Visibility = ViewStates.Visible;
+            this.PageIndicatorNotEdit = pageIndicatorNotEdit;
+
+            Android.Widget.LinearLayout pageIndicatorOnEdit = FindViewById<Android.Widget.LinearLayout>(Resource.Id.PageIndicatorOnEdit);
+            this.PageIndicatorOnEdit = pageIndicatorOnEdit;
+
+            Android.Widget.TextView pageNumberText = FindViewById<Android.Widget.TextView>(Resource.Id.PageNumberText);
+            this.PageNumberText = pageNumberText;
+
+            Android.Widget.LinearLayout pinContainer = FindViewById<Android.Widget.LinearLayout>(Resource.Id.PinContainer);
+            this.PinContainer = pinContainer;
+
             SetSupportActionBar(toolbar);
 
             recyclerView = FindViewById<RecyclerView>(Resource.Id.recyclerView);
             recyclerView.SetLayoutManager(new GridLayoutManager(this, 4, GridLayoutManager.Horizontal, false));
 
             PopulateRecyclerView();
+            this.HandlePageIndicator(1);
         }
-
+        
         public void PopulateRecyclerView()
         {
             listData.Add(new HomeScreenMenuItem { HomeScreenMenuItemId = Guid.NewGuid(), ItemName = "item 1", ItemPosition = 0, GroupName = "", ItemType= "product", ListGroupItemName = { }, IsDeleted =false });
@@ -90,10 +117,12 @@ namespace SampleGrouping
 
             mAdapter = new MyAdapter(listData, this, homeScreenMenu, recyclerView);
 
-            ItemTouchHelper.Callback callback = new ItemMoveCallback(mAdapter, recyclerView, this);
-            ItemTouchHelper touchHelper = new ItemTouchHelper(callback);
-            touchHelper.AttachToRecyclerView(recyclerView);
+            this.OnScrollListeners = new OnScrollListener(this.recyclerView.GetLayoutManager(), this);
+            this.recyclerView.AddOnScrollListener(this.OnScrollListeners);
+
             //this.SetLayoutTypeCore(true);
+
+            
 
             recyclerView.SetAdapter(mAdapter);
         }
@@ -124,9 +153,25 @@ namespace SampleGrouping
             int id = item.ItemId;
             if (id == Resource.Id.edit_menu)
             {
+                this.recyclerView.AddOnScrollListener(this.OnScrollListeners);
+
+                var checkPositionPage = this.FindPagePosition(this.recyclerView.GetLayoutManager());
+
+                this.PageIndicatorOnEdit.Visibility = ViewStates.Visible;
+                this.PageIndicatorNotEdit.Visibility = ViewStates.Gone;
+                this.PageNumberText.Text = checkPositionPage.ToString();
+
+                this.HandlePageIndicator(checkPositionPage);
+
                 var findAddItemMenu = this.DataMenu.FindItem(Resource.Id.add_item);
                 findAddItemMenu.SetVisible(true);
+
+                ItemTouchHelper.Callback callback = new ItemMoveCallback(mAdapter, recyclerView, this);
+                this._mItemTouchHelper = new ItemTouchHelper(callback);
+                this._mItemTouchHelper.AttachToRecyclerView(recyclerView);
+
                 mAdapter.SetMode(true);
+                //disini aja set drag and dropnya
                 
                 recyclerView.SetLayoutManager(new GridLayoutManager(this, 3, GridLayoutManager.Vertical, false));
 
@@ -137,8 +182,19 @@ namespace SampleGrouping
             }
             if (id == Resource.Id.save_menu)
             {
+                this.recyclerView.AddOnScrollListener(this.OnScrollListeners);
+
+                var checkPositionPage = this.FindPagePosition(this.recyclerView.GetLayoutManager());
+                this.HandlePageIndicator(checkPositionPage);
+
+                this.PageIndicatorOnEdit.Visibility = ViewStates.Gone;
+                this.PageIndicatorNotEdit.Visibility = ViewStates.Visible;
                 var findAddItemMenu = this.DataMenu.FindItem(Resource.Id.add_item);
                 findAddItemMenu.SetVisible(false);
+
+                if (this._mItemTouchHelper != null)
+                    this._mItemTouchHelper.AttachToRecyclerView(null);
+
                 mAdapter.SetMode(false);
 
                 recyclerView.SetLayoutManager(new GridLayoutManager(this, 4, GridLayoutManager.Horizontal, false));
@@ -171,6 +227,130 @@ namespace SampleGrouping
             Xamarin.Essentials.Platform.OnRequestPermissionsResult(requestCode, permissions, grantResults);
 
             base.OnRequestPermissionsResult(requestCode, permissions, grantResults);
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (this.DotDictionary != null)
+            {
+                foreach (Android.Widget.LinearLayout linearlayout in this.DotDictionary)
+                    linearlayout.Click -= DotIndicator_Click;
+                this.DotDictionary.Clear();
+            }
+            if (this.recyclerView != null)
+                this.recyclerView.RemoveOnScrollListener(this.OnScrollListeners);
+            base.Dispose(disposing);
+        }
+
+        public int FindPagePosition(AndroidX.RecyclerView.Widget.RecyclerView.LayoutManager layoutManager)
+        {
+            GridLayoutManager gridLayoutManager = layoutManager as GridLayoutManager;
+            var z = gridLayoutManager.FindLastCompletelyVisibleItemPosition();
+            double convertZ = (Convert.ToDouble(z));
+            double hasilBagi = (convertZ + 1) / 12;
+            int ceilingHasil = (Convert.ToInt32(Math.Ceiling(hasilBagi)));
+            //this.MainActivity.HandlePageIndicator(ceilingHasil);
+            return ceilingHasil;
+
+
+            //GridLayoutManager gridLayoutManager = this.layoutManager as GridLayoutManager;
+            //var z = gridLayoutManager.FindLastCompletelyVisibleItemPosition();
+            //var testZ = gridLayoutManager.FindLastVisibleItemPosition();
+            //double convertZ = (Convert.ToDouble(z));
+            //double hasilBagi = (convertZ + 1) / 12;
+            //int ceilingHasil = (Convert.ToInt32(Math.Ceiling(hasilBagi)));
+            //this.MainActivity.HandlePageIndicator(ceilingHasil);
+        }
+
+        public void HandlePageIndicator(int PageActive)
+        {
+            if (this.DotDictionary != null)
+            {
+                foreach (Android.Widget.LinearLayout linearLayout in this.DotDictionary)
+                    linearLayout.Click -= DotIndicator_Click;
+                this.DotDictionary.Clear();
+            }
+            else
+            {
+                this.DotDictionary = new List<Android.Widget.LinearLayout>();
+            }
+            this.PinContainer.RemoveAllViewsInLayout();
+            double itemCount = (Convert.ToDouble(mAdapter.data.Count) / 12);
+            double pageIndicatorValue = Math.Ceiling(itemCount);
+
+            for (int i = 1; i <= pageIndicatorValue; i++)
+            {
+                Android.Widget.LinearLayout linearLayout = new Android.Widget.LinearLayout(this);
+                if (i == PageActive)
+                {
+                    linearLayout.LayoutParameters = new Android.Widget.LinearLayout.LayoutParams(16, 16) { LeftMargin = 8, RightMargin = 8 };
+                    linearLayout.SetBackgroundResource(Resource.Drawable.circular_green);
+                }
+                else
+                {
+                    linearLayout.LayoutParameters = new Android.Widget.LinearLayout.LayoutParams(16, 16) { LeftMargin = 8, RightMargin = 8 };
+                    linearLayout.SetBackgroundResource(Resource.Drawable.rounded_accent);
+                }
+                this.PinContainer.AddView(linearLayout);
+                this.DotDictionary.Add(linearLayout);
+                linearLayout.Tag = i;
+                linearLayout.Click += DotIndicator_Click;
+            }
+            this.PinContainer.RequestLayout();
+            this.PinContainer.Invalidate();
+
+        }
+        private void DotIndicator_Click(object sender, EventArgs e)
+        {
+            Android.Widget.LinearLayout view = sender as Android.Widget.LinearLayout;
+            int position = (int)view.Tag;
+            if (this.recyclerView != null)
+                this.recyclerView.SmoothScrollToPosition((position - 1) * 12);
+        }
+    }
+    public class OnScrollListener : RecyclerView.OnScrollListener
+    {
+        #region Properties
+        AndroidX.RecyclerView.Widget.RecyclerView.LayoutManager layoutManager;
+        public MainActivity MainActivity { get; set; }
+        #endregion
+        public OnScrollListener(AndroidX.RecyclerView.Widget.RecyclerView.LayoutManager layoutManager, MainActivity mainActivity)
+        {
+            this.layoutManager = layoutManager;
+            this.MainActivity = mainActivity;
+        }
+        public override void OnScrolled(RecyclerView recyclerView, int dx, int dy)
+        {
+            base.OnScrolled(recyclerView, dx, dy);
+        }
+        public override void OnScrollStateChanged(RecyclerView recyclerView, int newState)
+        {
+            base.OnScrollStateChanged(recyclerView, newState);
+            if (newState == RecyclerView.ScrollStateIdle || newState == RecyclerView.ScrollStateSettling)
+            {
+                //this.MainActivity.ViewModel.UpdateStateScroll(newState);
+
+                GridLayoutManager gridLayoutManager = this.layoutManager as GridLayoutManager;
+                var z = gridLayoutManager.FindLastCompletelyVisibleItemPosition();
+                var testZ = gridLayoutManager.FindLastVisibleItemPosition();
+                double convertZ = (Convert.ToDouble(z));
+                double hasilBagi = (convertZ + 1) / 12;
+                int ceilingHasil = (Convert.ToInt32(Math.Ceiling(hasilBagi)));
+                this.MainActivity.HandlePageIndicator(ceilingHasil);
+
+                if (this.MainActivity.PageNumberText != null)
+                    this.MainActivity.PageNumberText.Text = ceilingHasil.ToString();
+
+            }
+
+            if (newState == RecyclerView.ScrollStateDragging || newState == RecyclerView.ScrollStateSettling)
+            {
+                //this.MainActivity.ViewModel.UpdateStateScroll(1);
+            }
+            if (newState == RecyclerView.ScrollStateIdle)
+            {
+                //this.MainActivity.ViewModel.UpdateStateScroll(newState);
+            }
         }
     }
     public class ItemMoveCallback : ItemTouchHelper.Callback 
