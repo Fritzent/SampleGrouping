@@ -67,6 +67,8 @@ namespace SampleGrouping
         public bool isModeEditNow { get; set; }
         public RecyclerView RecyclerView { get; set; }
         public HomeScreenMenu HomeScreenMenu { get; set; }
+        public int LastPagePositionBeforeInEditMode { get; set; }
+        public List<HomeScreenMenuItem> LastSavedData { get; set; }
         #endregion
 
         public MyAdapter(List<HomeScreenMenuItem> data, MainActivity mainActivity, HomeScreenMenu homeScreenMenu, RecyclerView recyclerView)
@@ -105,6 +107,8 @@ namespace SampleGrouping
                     item.HomeScreenMenuId = this.HomeScreenMenu.homeScreenMenuId;
                 }
             }
+            var checkData = this.data;
+            this.NotifyDataSetChanged();
             this.NotifyItemChanged(Position);
         }
 
@@ -112,6 +116,7 @@ namespace SampleGrouping
         {
             var pageSize = homeScreenMenu.pageSize;
             var itemCount = 12 * pageSize;
+
             List<HomeScreenMenuItem> itemGenerated = new List<HomeScreenMenuItem>();
 
             for (int i = 0; i < itemCount; i ++)
@@ -192,6 +197,98 @@ namespace SampleGrouping
             }
             this.data = itemGenerated;
         }
+
+        public void LoadDataAfterChangeMode(int pagePosition)
+        {
+            this.LastPagePositionBeforeInEditMode = pagePosition;
+            var data = this.data;
+            var homeScreenMenu = this.HomeScreenMenu;
+
+            var y = pagePosition * 12;
+            var x = y - 12;
+
+            List<HomeScreenMenuItem> itemGenerated = new List<HomeScreenMenuItem>();
+
+            for (int i = x; i < y; i++)
+            {
+                List<HomeScreenMenuItem> findItem = data.Where(o => o.ItemPosition == i && o.IsDeleted == false).ToList();
+                if (findItem.Count > 0)
+                {
+                    foreach (HomeScreenMenuItem item in findItem)
+                    {
+                        if (item != null)
+                        {
+                            if (!string.IsNullOrEmpty(item.GroupName))
+                            {
+                                List<HomeScreenMenuItem> getGroupItem = data.Where(o => o.ItemPosition == item.ItemPosition).ToList();
+                                foreach (HomeScreenMenuItem eachItem in getGroupItem)
+                                {
+                                    if (!this.GroupDictionary.ContainsKey(eachItem.ItemPosition))
+                                        this.GroupDictionary.Add(eachItem.ItemPosition, getGroupItem);
+                                }
+                                var LastItemInThisGroup = getGroupItem.Last();
+
+                                if (item.HomeScreenMenuItemId == LastItemInThisGroup.HomeScreenMenuItemId)
+                                {
+                                    item.ListGroupItemName = new List<string>();
+
+                                    List<HomeScreenMenuItem> itemsInDictionary = this.GroupDictionary[item.ItemPosition];
+
+                                    foreach (HomeScreenMenuItem itemInDictionary in itemsInDictionary)
+                                    {
+                                        if (itemInDictionary.HomeScreenMenuItemId != item.HomeScreenMenuItemId)
+                                        {
+                                            if (itemInDictionary.ItemType == "product")
+                                            {
+                                                if (itemInDictionary.ItemName != null)
+                                                    item.ListGroupItemName.Add(itemInDictionary.ItemName);
+                                            }
+                                        }
+                                        else
+                                        {
+                                            if (item.ItemType == "product")
+                                            {
+                                                if (item.ItemName != null)
+                                                    item.ListGroupItemName.Add(item.ItemName);
+                                            }
+                                        }
+                                    }
+                                    itemGenerated.Add(item);
+                                }
+                            }
+                            else
+                            {
+                                itemGenerated.Add(item);
+                            }
+                        }
+                        else
+                        {
+                            HomeScreenMenuItem emptyItem = new HomeScreenMenuItem();
+                            emptyItem.ItemPosition = i;
+                            //emptyItem.ItemName = "New Item" + (i + 1);
+                            emptyItem.HomeScreenMenuItemId = Guid.NewGuid();
+                            emptyItem.HomeScreenMenuId = homeScreenMenu.homeScreenMenuId;
+
+                            itemGenerated.Add(emptyItem);
+                        }
+                    }
+                }
+                else
+                {
+                    HomeScreenMenuItem emptyItem = new HomeScreenMenuItem();
+                    emptyItem.ItemPosition = i;
+                    //emptyItem.ItemName = "New Item" + i;
+                    emptyItem.HomeScreenMenuItemId = Guid.NewGuid();
+                    //emptyItem.ItemType = "product";
+                    emptyItem.HomeScreenMenuId = homeScreenMenu.homeScreenMenuId;
+
+                    itemGenerated.Add(emptyItem);
+                }
+            }
+            this.LastSavedData = data;
+            this.data = itemGenerated;
+        }
+
 
         public bool LoadDataAfterGrouping()
         {

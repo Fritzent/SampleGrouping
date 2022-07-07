@@ -9,6 +9,7 @@ using Google.Android.Material.FloatingActionButton;
 using Google.Android.Material.Snackbar;
 using AndroidX.RecyclerView.Widget;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace SampleGrouping
 {
@@ -51,6 +52,7 @@ namespace SampleGrouping
         public Android.Widget.TextView PageNumberText;
         public Android.Widget.FrameLayout AddPageSection;
         public Android.Widget.ImageView ImageAddPage;
+        public bool IgnoreScrollStateChanged { get; set; }
 
         protected override void OnRestoreInstanceState(Bundle savedInstanceState)
         {
@@ -162,7 +164,7 @@ namespace SampleGrouping
             int id = item.ItemId;
             if (id == Resource.Id.edit_menu)
             {
-                this.recyclerView.AddOnScrollListener(this.OnScrollListeners);
+                //this.recyclerView.AddOnScrollListener(this.OnScrollListeners);
 
                 var checkPositionPage = this.FindPagePosition(this.recyclerView.GetLayoutManager());
 
@@ -181,8 +183,18 @@ namespace SampleGrouping
 
                 mAdapter.SetMode(true);
                 //disini aja set drag and dropnya
-                
+
+                var pagePosition = this.FindPagePosition(this.recyclerView.GetLayoutManager());
+                mAdapter.LoadDataAfterChangeMode((pagePosition));
+
                 recyclerView.SetLayoutManager(new GridLayoutManager(this, 3, GridLayoutManager.Vertical, false));
+
+                //mAdapter = new MyAdapter(listData, this, homeScreenMenu, recyclerView);
+                //MyAdapter newMAdapter = new MyAdapter(mAdapter.data, this, mAdapter.HomeScreenMenu, recyclerView);
+                //recyclerView.SetAdapter(newMAdapter);
+
+                //MyAdapter LoadNewAdapter = new MyAdapter(mAdapter.data, this, this.homeScreenMenu, this.recyclerView);
+                recyclerView.SetAdapter(mAdapter);
 
                 mAdapter.NotifyDataSetChanged();
 
@@ -192,6 +204,7 @@ namespace SampleGrouping
             if (id == Resource.Id.save_menu)
             {
                 this.recyclerView.AddOnScrollListener(this.OnScrollListeners);
+                this.recyclerView.NestedScrollingEnabled = true;
 
                 var checkPositionPage = this.FindPagePosition(this.recyclerView.GetLayoutManager());
                 this.HandlePageIndicator(checkPositionPage);
@@ -208,7 +221,30 @@ namespace SampleGrouping
 
                 recyclerView.SetLayoutManager(new GridLayoutManager(this, 4, GridLayoutManager.Horizontal, false));
 
+                recyclerView.SetAdapter(mAdapter);
+
+                mAdapter.LoadData(mAdapter.LastSavedData, mAdapter.HomeScreenMenu);
                 mAdapter.NotifyDataSetChanged();
+
+                this.IgnoreScrollStateChanged = true;
+
+                var updateIndicator = this.HandlePageIndicator(mAdapter.LastPagePositionBeforeInEditMode);
+
+                if (updateIndicator)
+                    this.recyclerView.SmoothScrollToPosition((mAdapter.LastPagePositionBeforeInEditMode * 12) - 1);
+
+
+                //ServiceProvider.GetService<IViewService>().RunOnBackgroundThread(async () =>
+                //{
+
+                //}, 0);
+
+                Task.Run(async () => 
+                {
+                    await Task.Delay(3000);
+                    this.IgnoreScrollStateChanged = false;
+                });
+
                 //disini panggil yg untuk save itemnya
 
                 return true;
@@ -262,18 +298,9 @@ namespace SampleGrouping
             int ceilingHasil = (Convert.ToInt32(Math.Ceiling(hasilBagi)));
             //this.MainActivity.HandlePageIndicator(ceilingHasil);
             return ceilingHasil;
-
-
-            //GridLayoutManager gridLayoutManager = this.layoutManager as GridLayoutManager;
-            //var z = gridLayoutManager.FindLastCompletelyVisibleItemPosition();
-            //var testZ = gridLayoutManager.FindLastVisibleItemPosition();
-            //double convertZ = (Convert.ToDouble(z));
-            //double hasilBagi = (convertZ + 1) / 12;
-            //int ceilingHasil = (Convert.ToInt32(Math.Ceiling(hasilBagi)));
-            //this.MainActivity.HandlePageIndicator(ceilingHasil);
         }
 
-        public void HandlePageIndicator(int PageActive)
+        public bool HandlePageIndicator(int PageActive)
         {
             if (this.DotDictionary != null)
             {
@@ -310,6 +337,7 @@ namespace SampleGrouping
             this.PinContainer.RequestLayout();
             this.PinContainer.Invalidate();
 
+            return true;
         }
         private void DotIndicator_Click(object sender, EventArgs e)
         {
@@ -340,24 +368,67 @@ namespace SampleGrouping
         {
             base.OnScrolled(recyclerView, dx, dy);
         }
+        public View FindOneVisibleChild(int fromIndex, int toIndex, bool completelyVisible, RecyclerView recyclerView, GridLayoutManager gridLayoutManager)
+        {
+            var helper = OrientationHelper.CreateOrientationHelper(recyclerView.GetLayoutManager(), gridLayoutManager.Orientation);
+            int start = helper.StartAfterPadding;
+            int end = helper.EndAfterPadding;
+
+            int next = toIndex > fromIndex ? 1 : -1;
+
+            for (int i = fromIndex; i != toIndex; i+=next)
+            {
+                View child = recyclerView.GetChildAt(i);
+                int childStart = gridLayoutManager.GetDecoratedLeft(child);
+                int childEnd = gridLayoutManager.GetDecoratedRight(child);
+
+                if (childStart < end && childEnd > start)
+                {
+                    if (completelyVisible)
+                    {
+                        if (childStart >= start && childEnd <= end)
+                        {
+                            return child;
+                        }
+                    }
+                    else
+                    {
+                        return child;
+                    }
+                }
+            }
+            return null;
+        }
         public override void OnScrollStateChanged(RecyclerView recyclerView, int newState)
         {
             base.OnScrollStateChanged(recyclerView, newState);
             if (newState == RecyclerView.ScrollStateIdle || newState == RecyclerView.ScrollStateSettling)
             {
                 //this.MainActivity.ViewModel.UpdateStateScroll(newState);
+                if (!this.MainActivity.IgnoreScrollStateChanged)
+                {
+                    GridLayoutManager gridLayoutManager = this.layoutManager as GridLayoutManager;
+                    var checkData = gridLayoutManager.ChildCount;
+                    var checkChildCountInRecyclerView = recyclerView.ChildCount;
 
-                GridLayoutManager gridLayoutManager = this.layoutManager as GridLayoutManager;
-                var z = gridLayoutManager.FindLastCompletelyVisibleItemPosition();
-                var testZ = gridLayoutManager.FindLastVisibleItemPosition();
-                double convertZ = (Convert.ToDouble(z));
-                double hasilBagi = (convertZ + 1) / 12;
-                int ceilingHasil = (Convert.ToInt32(Math.Ceiling(hasilBagi)));
-                this.MainActivity.HandlePageIndicator(ceilingHasil);
+                    var findLastCompletelyVisibleItemPosition = this.FindOneVisibleChild((checkChildCountInRecyclerView - 1), -1, true, recyclerView, gridLayoutManager);
 
-                if (this.MainActivity.PageNumberText != null)
-                    this.MainActivity.PageNumberText.Text = ceilingHasil.ToString();
+                    int child = 0;
+                    if (findLastCompletelyVisibleItemPosition != null)
+                    {
+                        child = recyclerView.GetChildLayoutPosition(findLastCompletelyVisibleItemPosition);
+                    }
+                    //gridLayoutManager.ChildCount = recyclerView.ChildCount;
 
+                    var z = child;
+                    double convertZ = (Convert.ToDouble(z));
+                    double hasilBagi = (convertZ + 1) / 12;
+                    int ceilingHasil = (Convert.ToInt32(Math.Ceiling(hasilBagi)));
+                    this.MainActivity.HandlePageIndicator(ceilingHasil);
+
+                    if (this.MainActivity.PageNumberText != null)
+                        this.MainActivity.PageNumberText.Text = ceilingHasil.ToString();
+                }
             }
 
             if (newState == RecyclerView.ScrollStateDragging || newState == RecyclerView.ScrollStateSettling)
