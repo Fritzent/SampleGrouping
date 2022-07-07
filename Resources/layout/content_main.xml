@@ -38,20 +38,6 @@
             android:id="@+id/PinContainer"
             android:orientation="horizontal"
             android:gravity="center"/>
-        <!--<FrameLayout
-            android:id="@+id/AddPageSection"
-            android:layout_width="24dp"
-            android:layout_height="24dp">
-            <ImageView
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:src="@drawable/ic_add_page"/>
-            <Button
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:id="@+id/AddPageBtn"
-                android:background="@drawable/ripple_transparent"/>
-        </FrameLayout>-->
     </LinearLayout>
     <LinearLayout
         android:id="@+id/PageIndicatorOnEdit"
@@ -80,5 +66,20 @@
             android:layout_width="24dp"
             android:layout_height="24dp"
             android:src="@android:drawable/btn_plus"/>
+        <FrameLayout
+            android:id="@+id/AddPageSection"
+            android:layout_width="24dp"
+            android:layout_height="24dp">
+            <ImageView
+                android:id="@+id/ImageAddPage"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_add_page"/>
+            <!--<Button
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:id="@+id/AddPageBtn"
+                android:background="@drawable/ripple_transparent"/>-->
+        </FrameLayout>
     </LinearLayout>
 </LinearLayout>

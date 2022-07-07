@@ -49,6 +49,8 @@ namespace SampleGrouping
         public OnScrollListener OnScrollListeners { get; set; }
         private ItemTouchHelper _mItemTouchHelper;
         public Android.Widget.TextView PageNumberText;
+        public Android.Widget.FrameLayout AddPageSection;
+        public Android.Widget.ImageView ImageAddPage;
 
         protected override void OnRestoreInstanceState(Bundle savedInstanceState)
         {
@@ -76,6 +78,13 @@ namespace SampleGrouping
 
             Android.Widget.TextView pageNumberText = FindViewById<Android.Widget.TextView>(Resource.Id.PageNumberText);
             this.PageNumberText = pageNumberText;
+
+            Android.Widget.FrameLayout addPageSection = FindViewById<Android.Widget.FrameLayout>(Resource.Id.AddPageSection);
+            this.AddPageSection = addPageSection;
+
+            Android.Widget.ImageView imageAddPage = FindViewById<Android.Widget.ImageView>(Resource.Id.ImageAddPage);
+            imageAddPage.Click += AddPage_Click;
+            this.ImageAddPage = imageAddPage;
 
             Android.Widget.LinearLayout pinContainer = FindViewById<Android.Widget.LinearLayout>(Resource.Id.PinContainer);
             this.PinContainer = pinContainer;
@@ -204,13 +213,13 @@ namespace SampleGrouping
 
                 return true;
             }
-            if (id == Resource.Id.add_item)
-            {
-                mAdapter.AddItems();
-                mAdapter.NotifyDataSetChanged();
-                //disini handle untuk add itemsnya
-                return true;
-            }
+            //if (id == Resource.Id.add_item)
+            //{
+            //    mAdapter.AddItems();
+            //    mAdapter.NotifyDataSetChanged();
+            //    //disini handle untuk add itemsnya
+            //    return true;
+            //}
 
             return base.OnOptionsItemSelected(item);
         }
@@ -239,6 +248,8 @@ namespace SampleGrouping
             }
             if (this.recyclerView != null)
                 this.recyclerView.RemoveOnScrollListener(this.OnScrollListeners);
+            if (this.ImageAddPage != null)
+                this.ImageAddPage.Click -= AddPage_Click;
             base.Dispose(disposing);
         }
 
@@ -306,6 +317,12 @@ namespace SampleGrouping
             int position = (int)view.Tag;
             if (this.recyclerView != null)
                 this.recyclerView.SmoothScrollToPosition((position - 1) * 12);
+        }
+        public void AddPage_Click(object sender, EventArgs e)
+        {
+            HomeScreenMenu homeScreenMenuUpdate = mAdapter.AddPage(this.homeScreenMenu);
+            this.homeScreenMenu = homeScreenMenuUpdate;
+            mAdapter.NotifyDataSetChanged();
         }
     }
     public class OnScrollListener : RecyclerView.OnScrollListener

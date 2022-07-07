@@ -80,6 +80,34 @@ namespace SampleGrouping
 
         }
 
+        public HomeScreenMenu AddPage(HomeScreenMenu homeScreenMenu) 
+        {
+            var checkPageSizeNow = homeScreenMenu.pageSize;
+            var updateCheckPageSize = checkPageSizeNow + 1;
+            homeScreenMenu.pageSize = updateCheckPageSize;
+
+            this.LoadData(this.data, homeScreenMenu);
+            return homeScreenMenu;
+        }
+
+        public void AddItems(int Position)
+        {
+            List<HomeScreenMenuItem> getItemsInPosition = this.data.Where(o => o.ItemPosition == Position).ToList();
+
+            if (getItemsInPosition.Count > 0)
+            {
+                foreach (HomeScreenMenuItem item in getItemsInPosition)
+                {
+                    item.ItemName = "NewItems" + item.ItemPosition;
+                    item.IsDeleted = false;
+                    item.ItemType = "product";
+                    item.HomeScreenMenuItemId = Guid.NewGuid();
+                    item.HomeScreenMenuId = this.HomeScreenMenu.homeScreenMenuId;
+                }
+            }
+            this.NotifyItemChanged(Position);
+        }
+
         public void LoadData(List<HomeScreenMenuItem> data, HomeScreenMenu homeScreenMenu)
         {
             var pageSize = homeScreenMenu.pageSize;
@@ -163,6 +191,84 @@ namespace SampleGrouping
                 }
             }
             this.data = itemGenerated;
+        }
+
+        public bool LoadDataAfterGrouping()
+        {
+            List<HomeScreenMenuItem> dataSource = this.data.ToList();
+            List<HomeScreenMenuItem> newDataGenerated = new List<HomeScreenMenuItem>();
+
+            for (int x = 0; x < dataSource.Count(); x++)
+            {
+                //List<HomeScreenMenuItem> findItemInResult = homeScreenItemResult.Where(o => o.Position == x && o.IsDeleted == false).ToList();
+                List<HomeScreenMenuItem> findItemInDataSource = this.data.Where(o => o.ItemPosition == x).ToList();
+
+                if (findItemInDataSource.Count() > 0)
+                {
+                    foreach (HomeScreenMenuItem item in findItemInDataSource)
+                    {
+                        if (item != null)
+                        {
+                            if (!string.IsNullOrEmpty(item.GroupName))
+                            {
+                                //List<HomeScreenMenuItem> getGroupItem = homeScreenItemResult.Where(o => o.Position == item.Position).ToList();
+                                List<HomeScreenMenuItem> getGroupItemInDataSource = dataSource.Where(o => o.ItemPosition == item.ItemPosition).ToList();
+
+                                foreach (var eachItem in getGroupItemInDataSource)
+                                {
+                                    if (!this.GroupDictionary.ContainsKey(eachItem.ItemPosition))
+                                        this.GroupDictionary.Add(eachItem.ItemPosition, getGroupItemInDataSource);
+                                    if (this.GroupDictionary.ContainsKey(eachItem.ItemPosition))
+                                    {
+                                        if (!this.GroupDictionary[eachItem.ItemPosition].Contains(eachItem))
+                                            this.GroupDictionary[eachItem.ItemPosition].Add(eachItem);
+                                    }
+                                }
+
+                                var LastItemInThisGroup = getGroupItemInDataSource.Last();
+
+                                if (item.HomeScreenMenuItemId == LastItemInThisGroup.HomeScreenMenuItemId)
+                                {
+                                    item.ListGroupItemName = new List<string>();
+
+                                    List<HomeScreenMenuItem> itemsInDictionary = this.GroupDictionary[item.ItemPosition];
+
+                                    foreach (HomeScreenMenuItem itemInDictionary in itemsInDictionary)
+                                    {
+                                        if (itemInDictionary.HomeScreenMenuItemId != item.HomeScreenMenuItemId)
+                                        {
+                                            if (itemInDictionary.ItemType == "product")
+                                            {
+                                                if (itemInDictionary.ItemName != null)
+                                                    item.ListGroupItemName.Add(itemInDictionary.ItemName);
+                                            }
+                                        }
+                                        else
+                                        {
+                                            if (item.ItemType == "product")
+                                            {
+                                                if (item.ItemName != null)
+                                                    item.ListGroupItemName.Add(item.ItemName);
+                                            }
+                                        }
+                                    }
+                                    newDataGenerated.Add(item);
+                                }
+                                else
+                                {
+
+                                }
+                            }
+                            else
+                                newDataGenerated.Add(item);
+                        }
+                    }
+                }
+            }
+            this.data = newDataGenerated;
+            this.NotifyDataSetChanged();
+
+            return true;
         }
 
         public void SetDataToShowGroupingIndicator (int TargetPosition, bool IsTargetIndicatorGroupingShowed)
@@ -552,24 +658,6 @@ namespace SampleGrouping
                     break;
             }
         }
-
-        public void AddItems(int Position)
-        {
-            List<HomeScreenMenuItem> getItemsInPosition = this.data.Where(o => o.ItemPosition == Position).ToList();
-
-            if (getItemsInPosition.Count > 0)
-            {
-                foreach (HomeScreenMenuItem item in getItemsInPosition)
-                {
-                    item.ItemName = "NewItems" + item.ItemPosition;
-                    item.IsDeleted = false;
-                    item.ItemType = "product";
-                    item.HomeScreenMenuItemId = Guid.NewGuid();
-                    item.HomeScreenMenuId = this.HomeScreenMenu.homeScreenMenuId;
-                }
-            }
-            this.NotifyItemChanged(Position);
-        }
         public void DeleteItems(int Position)
         {
             List<HomeScreenMenuItem> itemToDelete = this.data.Where(o => o.ItemPosition == Position).ToList();
@@ -785,89 +873,6 @@ namespace SampleGrouping
         public List<HomeScreenMenuItem> getDataAdapter()
         {
             return this.data;
-        }
-
-        public bool LoadDataAfterGrouping()
-        {
-            List<HomeScreenMenuItem> dataSource = this.data.ToList();
-            List<HomeScreenMenuItem> newDataGenerated = new List<HomeScreenMenuItem>();
-
-            for(int x = 0; x < dataSource.Count(); x++)
-            {
-                //List<HomeScreenMenuItem> findItemInResult = homeScreenItemResult.Where(o => o.Position == x && o.IsDeleted == false).ToList();
-                List<HomeScreenMenuItem> findItemInDataSource = this.data.Where(o => o.ItemPosition == x).ToList();
-                
-                if (findItemInDataSource.Count() > 0)
-                {
-                    foreach(HomeScreenMenuItem item in findItemInDataSource)
-                    {
-                        if (item != null)
-                        {
-                            if (!string.IsNullOrEmpty(item.GroupName))
-                            {
-                                //List<HomeScreenMenuItem> getGroupItem = homeScreenItemResult.Where(o => o.Position == item.Position).ToList();
-                                List<HomeScreenMenuItem> getGroupItemInDataSource = dataSource.Where(o => o.ItemPosition == item.ItemPosition).ToList();
-
-                                foreach(var eachItem in getGroupItemInDataSource)
-                                {
-                                    if (!this.GroupDictionary.ContainsKey(eachItem.ItemPosition))
-                                        this.GroupDictionary.Add(eachItem.ItemPosition, getGroupItemInDataSource);
-                                    if (this.GroupDictionary.ContainsKey(eachItem.ItemPosition))
-                                    {
-                                        if (!this.GroupDictionary[eachItem.ItemPosition].Contains(eachItem))
-                                            this.GroupDictionary[eachItem.ItemPosition].Add(eachItem);
-                                    }
-                                }
-
-                                var LastItemInThisGroup = getGroupItemInDataSource.Last();
-
-                                if (item.HomeScreenMenuItemId == LastItemInThisGroup.HomeScreenMenuItemId)
-                                {
-                                    item.ListGroupItemName = new List<string>();
-
-                                    List<HomeScreenMenuItem> itemsInDictionary = this.GroupDictionary[item.ItemPosition];
-
-                                    foreach(HomeScreenMenuItem itemInDictionary in itemsInDictionary)
-                                    {
-                                        if (itemInDictionary.HomeScreenMenuItemId != item.HomeScreenMenuItemId)
-                                        {
-                                            if (itemInDictionary.ItemType == "product")
-                                            {
-                                                if (itemInDictionary.ItemName != null)
-                                                    item.ListGroupItemName.Add(itemInDictionary.ItemName);
-                                            }
-                                        }
-                                        else
-                                        {
-                                            if (item.ItemType == "product")
-                                            {
-                                                if (item.ItemName != null)
-                                                    item.ListGroupItemName.Add(item.ItemName);
-                                            }
-                                        }
-                                    }
-                                    newDataGenerated.Add(item);
-                                }
-                                else
-                                {
-
-                                }
-                            }
-                            else
-                                newDataGenerated.Add(item);
-                        }
-                    }
-                }
-            }
-            this.data = newDataGenerated;
-            this.NotifyDataSetChanged();
-
-            return true;
-        }
-
-        public void AddItems()
-        {
-           // var countData = 
         }
         public override int ItemCount
         {
