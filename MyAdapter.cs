@@ -955,38 +955,29 @@ namespace SampleGrouping
             //disini untuk munculin tanda x di edit modenya
             if (this.isModeEditNow)
             {
-                int fragmentHeight = this.MainActivity.Window.DecorView.Height;
-                int fragmentWidth = this.MainActivity.Window.DecorView.Width;
+                int fragmentHeight = this.RecyclerView.Height;
 
                 int cardElevation = dpToPx((int)4);
 
-                int width = 0;
                 int height = 0;
 
                 var getLayoutManager = this.RecyclerView.GetLayoutManager();
                 RelativeLayout RelativeContainerToCustome = holder.ItemView.FindViewById<RelativeLayout>(Resource.Id.RelativeContainer);
 
-                width = (fragmentWidth) / 3;
-                height = ((fragmentHeight / 4) - (8 * 2) - (cardElevation * 8));
-                //height = ((fragmentHeight / 4) - (8 * 2) - (cardElevation * 9) - 15);
-
-                var gapBetweenHeightEditAndNot = height - this.MarginToLinearLayout;
-
-                height = height - gapBetweenHeightEditAndNot + 5;
-
+                height = (fragmentHeight / 4);
+                
                 if (h.RelativeContainer != null)
                 {
                     RecyclerView.LayoutParams param = (RecyclerView.LayoutParams)h.RelativeContainer.LayoutParameters;
-                    param.Width = width;
+                    //param.Width = width;
                     param.Height = height;
-                    param.BottomMargin = gapBetweenHeightEditAndNot;
                     h.RelativeContainer.LayoutParameters = param;
                     h.RelativeContainer.Visibility = ViewStates.Visible;
                 }
                 if (h.CardContainer != null)
                 {
                     ViewGroup.LayoutParams param = h.CardContainer.LayoutParameters;
-                    param.Width = width;
+                    //param.Width = width;
                     param.Height = height;
                     h.CardContainer.LayoutParameters = param;
                     h.CardContainer.Visibility = ViewStates.Visible;
@@ -1009,7 +1000,6 @@ namespace SampleGrouping
 
             if (!this.isModeEditNow)
             {
-                int fragmentHeight = this.MainActivity.Window.DecorView.Height;
                 int fragmentWidth = this.MainActivity.Window.DecorView.Width;
                 //int cardMargin = dpToPx((int)5);
                 int cardElevation = dpToPx((int)4);
@@ -1037,16 +1027,12 @@ namespace SampleGrouping
                 RelativeLayout RelativeContainerToCustome = holder.ItemView.FindViewById<RelativeLayout>(Resource.Id.RelativeContainer);
 
                 width = (fragmentWidth) / 3;
-                height = ((fragmentHeight / 4) - (8 * 2) - (cardElevation * 9));
-
-                this.MarginToLinearLayout = height;
 
                 if (h.RelativeContainer != null)
                 {
                     RecyclerView.LayoutParams param = (RecyclerView.LayoutParams)h.RelativeContainer.LayoutParameters;
                     //var checkGap = param
                     param.Width = width;
-                    param.Height = height;
                     h.RelativeContainer.LayoutParameters = param;
                     h.RelativeContainer.Visibility = ViewStates.Visible;
                 }
@@ -1055,7 +1041,6 @@ namespace SampleGrouping
                     ViewGroup.LayoutParams param = h.CardContainer.LayoutParameters;
                     //RecyclerView.LayoutParams param = (RecyclerView.LayoutParams)h.CardContainer.LayoutParameters;
                     param.Width = width;
-                    param.Height = height;
                     h.CardContainer.LayoutParameters = param;
                     h.CardContainer.Visibility = ViewStates.Visible;
                 }
