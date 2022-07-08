@@ -404,13 +404,30 @@ namespace SampleGrouping
             base.OnScrollStateChanged(recyclerView, newState);
             if (newState == RecyclerView.ScrollStateIdle || newState == RecyclerView.ScrollStateSettling)
             {
+                DateTime d1 = DateTime.Now;
+
+                var checkItem = recyclerView.ComputeHorizontalScrollRange();
+                var checkItem2 = recyclerView.ComputeHorizontalScrollOffset();
+                var checkItem3 = recyclerView.ComputeHorizontalScrollExtent();
+
+                //System.Diagnostics.Debug.WriteLine("checkItem = " + recyclerView.ComputeHorizontalScrollRange());
+                //System.Diagnostics.Debug.WriteLine("checkItem2 = " + recyclerView.ComputeHorizontalScrollOffset());
+                //System.Diagnostics.Debug.WriteLine("checkItem3 = " + recyclerView.ComputeHorizontalScrollExtent());
+
+                DateTime d2 = DateTime.Now;
+
+                System.Diagnostics.Debug.WriteLine("Benchmark1 : " + (d2 - d1));
+
                 //this.MainActivity.ViewModel.UpdateStateScroll(newState);
                 if (!this.MainActivity.IgnoreScrollStateChanged)
                 {
+                    DateTime d3 = DateTime.Now;
+
                     GridLayoutManager gridLayoutManager = this.layoutManager as GridLayoutManager;
                     var checkData = gridLayoutManager.ChildCount;
                     var checkChildCountInRecyclerView = recyclerView.ChildCount;
 
+                    
                     var findLastCompletelyVisibleItemPosition = this.FindOneVisibleChild((checkChildCountInRecyclerView - 1), -1, true, recyclerView, gridLayoutManager);
 
                     int child = 0;
@@ -419,6 +436,10 @@ namespace SampleGrouping
                         child = recyclerView.GetChildLayoutPosition(findLastCompletelyVisibleItemPosition);
                     }
                     //gridLayoutManager.ChildCount = recyclerView.ChildCount;
+
+                    DateTime d4 = DateTime.Now;
+
+                    System.Diagnostics.Debug.WriteLine("Benchmark2 : " + (d4 - d3));
 
                     var z = child;
                     double convertZ = (Convert.ToDouble(z));
