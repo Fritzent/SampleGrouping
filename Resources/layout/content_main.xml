@@ -46,11 +46,15 @@
         android:orientation="horizontal"
         android:gravity="center"
         android:visibility="gone">
-        <ImageView
+        <LinearLayout
             android:id="@+id/BtnPagePrevious"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:src="@android:drawable/btn_minus"/>
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@android:drawable/btn_minus"/>
+        </LinearLayout>
         <LinearLayout
             android:id="@+id/PageNumberSection"
             android:layout_width="wrap_content"
@@ -61,11 +65,15 @@
                 android:layout_height="wrap_content"
                 android:textSize="16sp"/>
         </LinearLayout>
-        <ImageView
+        <LinearLayout
             android:id="@+id/BtnPageNext"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:src="@android:drawable/btn_plus"/>
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@android:drawable/btn_plus"/>
+        </LinearLayout>
         <FrameLayout
             android:id="@+id/AddPageSection"
             android:layout_width="24dp"

@@ -49,7 +49,9 @@ namespace SampleGrouping
         List<Android.Widget.LinearLayout> DotDictionary { get; set; }
         public OnScrollListener OnScrollListeners { get; set; }
         private ItemTouchHelper _mItemTouchHelper;
+        public Android.Widget.LinearLayout BtnPagePrevious;
         public Android.Widget.TextView PageNumberText;
+        public Android.Widget.LinearLayout BtnPageNext;
         public Android.Widget.FrameLayout AddPageSection;
         public Android.Widget.ImageView ImageAddPage;
         public bool IgnoreScrollStateChanged { get; set; }
@@ -78,8 +80,18 @@ namespace SampleGrouping
             Android.Widget.LinearLayout pageIndicatorOnEdit = FindViewById<Android.Widget.LinearLayout>(Resource.Id.PageIndicatorOnEdit);
             this.PageIndicatorOnEdit = pageIndicatorOnEdit;
 
+            Android.Widget.LinearLayout btnPagePrevious = FindViewById<Android.Widget.LinearLayout>(Resource.Id.BtnPagePrevious);
+            btnPagePrevious.Tag = "previous";
+            btnPagePrevious.Click += IndicatorOnEdit_Click;
+            this.BtnPagePrevious = btnPagePrevious;
+
             Android.Widget.TextView pageNumberText = FindViewById<Android.Widget.TextView>(Resource.Id.PageNumberText);
             this.PageNumberText = pageNumberText;
+
+            Android.Widget.LinearLayout btnPageNext = FindViewById<Android.Widget.LinearLayout>(Resource.Id.BtnPageNext);
+            btnPageNext.Tag = "next";
+            btnPageNext.Click += IndicatorOnEdit_Click;
+            this.BtnPageNext = btnPageNext;
 
             Android.Widget.FrameLayout addPageSection = FindViewById<Android.Widget.FrameLayout>(Resource.Id.AddPageSection);
             this.AddPageSection = addPageSection;
@@ -174,7 +186,7 @@ namespace SampleGrouping
 
                 this.HandlePageIndicator(checkPositionPage);
 
-                var findAddItemMenu = this.DataMenu.FindItem(Resource.Id.add_item);
+                var findAddItemMenu = this.DataMenu.FindItem(Resource.Id.delete_page);
                 findAddItemMenu.SetVisible(true);
 
                 ItemTouchHelper.Callback callback = new ItemMoveCallback(mAdapter, recyclerView, this);
@@ -211,7 +223,7 @@ namespace SampleGrouping
 
                 this.PageIndicatorOnEdit.Visibility = ViewStates.Gone;
                 this.PageIndicatorNotEdit.Visibility = ViewStates.Visible;
-                var findAddItemMenu = this.DataMenu.FindItem(Resource.Id.add_item);
+                var findAddItemMenu = this.DataMenu.FindItem(Resource.Id.delete_page);
                 findAddItemMenu.SetVisible(false);
 
                 if (this._mItemTouchHelper != null)
@@ -248,6 +260,13 @@ namespace SampleGrouping
                 //disini panggil yg untuk save itemnya
 
                 return true;
+            }
+            if (id == Resource.Id.delete_page)
+            {
+                HomeScreenMenu homeScreenMenuUpdate = mAdapter.DeletePage(this.homeScreenMenu);
+                this.homeScreenMenu = homeScreenMenuUpdate;
+                this.PageNumberText.Text = mAdapter.LastPagePositionBeforeInEditMode.ToString();
+                mAdapter.NotifyDataSetChanged();
             }
             //if (id == Resource.Id.add_item)
             //{
@@ -346,10 +365,19 @@ namespace SampleGrouping
             if (this.recyclerView != null)
                 this.recyclerView.SmoothScrollToPosition((position - 1) * 12);
         }
+        public void IndicatorOnEdit_Click(object sender, EventArgs e)
+        {
+            Android.Widget.LinearLayout view = sender as Android.Widget.LinearLayout;
+            string btnClickMode = (string)view.Tag;
+            mAdapter.IndicatorOnEditModeClick(btnClickMode);
+            mAdapter.NotifyDataSetChanged();
+            this.PageNumberText.Text = mAdapter.LastPagePositionBeforeInEditMode.ToString();
+        }
         public void AddPage_Click(object sender, EventArgs e)
         {
             HomeScreenMenu homeScreenMenuUpdate = mAdapter.AddPage(this.homeScreenMenu);
             this.homeScreenMenu = homeScreenMenuUpdate;
+            this.PageNumberText.Text = mAdapter.LastPagePositionBeforeInEditMode.ToString();
             mAdapter.NotifyDataSetChanged();
         }
     }

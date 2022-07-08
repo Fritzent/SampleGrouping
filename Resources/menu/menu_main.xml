@@ -12,9 +12,9 @@
         android:title="Save"
         app:showAsAction="never" />
 	<item
-        android:id="@+id/add_item"
+        android:id="@+id/delete_page"
         android:orderInCategory="100"
-        android:title="Add Items"
+        android:title="Delete Page"
         app:showAsAction="never"
         android:visible="false"/>
 		
