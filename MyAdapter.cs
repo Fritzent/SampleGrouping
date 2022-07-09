@@ -1002,8 +1002,8 @@ namespace SampleGrouping
             if (this.isModeEditNow)
             {
                 int fragmentHeight = this.RecyclerView.Height;
-
                 int cardElevation = dpToPx((int)4);
+
                 int height = 0;
 
                 var getLayoutManager = this.RecyclerView.GetLayoutManager();
