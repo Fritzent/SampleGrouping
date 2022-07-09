@@ -20,11 +20,6 @@ namespace SampleGrouping
         public string ItemName { get; set; }
         public string ItemType { get; set; }
         public int ItemPosition { get; set; }
-        //public int UserItemPosition
-        //{
-        //    //int posUser = (pageCount * 12) + ((Position % 12) / row) + ((Position % row) * column);
-        //    get { return }
-        //}
         public List<string> ListGroupItemName { get; set; }
         public string GroupName { get; set; }
         public bool IsDeleted { get; set; }
@@ -56,21 +51,11 @@ namespace SampleGrouping
         public Android.Widget.ImageView ImageAddPage;
         public bool IgnoreScrollStateChanged { get; set; }
 
-        protected override void OnRestoreInstanceState(Bundle savedInstanceState)
-        {
-            base.OnRestoreInstanceState(savedInstanceState);
-            if (this.mAdapter != null || this.mAdapter == null)
-                this.mAdapter = new MyAdapter(this.listData, this, this.homeScreenMenu, this.recyclerView);
-        }
-
         protected override void OnCreate(Bundle savedInstanceState)
         {
             base.OnCreate(savedInstanceState);
             Xamarin.Essentials.Platform.Init(this, savedInstanceState);
             SetContentView(Resource.Layout.activity_main);
-
-            //Android.Widget.LinearLayout groupingIndicator = FindViewById<Android.Widget.LinearLayout>(Resource.Id.IndicatorGrouping);
-            //this.GroupingIndicator = groupingIndicator;
 
             Toolbar toolbar = FindViewById<Toolbar>(Resource.Id.toolbar);
             Android.Widget.LinearLayout pageIndicatorNotEdit = FindViewById<Android.Widget.LinearLayout>(Resource.Id.PageIndicatorNotOnEdit);
@@ -143,10 +128,7 @@ namespace SampleGrouping
             this.OnScrollListeners = new OnScrollListener(this.recyclerView.GetLayoutManager(), this);
             this.recyclerView.AddOnScrollListener(this.OnScrollListeners);
 
-            //this.SetLayoutTypeCore(true);
-
-            
-
+            this.SetLayoutTypeCore(true);
             recyclerView.SetAdapter(mAdapter);
         }
 
@@ -176,8 +158,6 @@ namespace SampleGrouping
             int id = item.ItemId;
             if (id == Resource.Id.edit_menu)
             {
-                //this.recyclerView.AddOnScrollListener(this.OnScrollListeners);
-
                 var checkPositionPage = this.FindPagePosition(this.recyclerView.GetLayoutManager());
 
                 this.PageIndicatorOnEdit.Visibility = ViewStates.Visible;
@@ -194,23 +174,14 @@ namespace SampleGrouping
                 this._mItemTouchHelper.AttachToRecyclerView(recyclerView);
 
                 mAdapter.SetMode(true);
-                //disini aja set drag and dropnya
 
                 var pagePosition = this.FindPagePosition(this.recyclerView.GetLayoutManager());
                 mAdapter.LoadDataAfterChangeMode((pagePosition));
 
                 recyclerView.SetLayoutManager(new GridLayoutManager(this, 3, GridLayoutManager.Vertical, false));
-
-                //mAdapter = new MyAdapter(listData, this, homeScreenMenu, recyclerView);
-                //MyAdapter newMAdapter = new MyAdapter(mAdapter.data, this, mAdapter.HomeScreenMenu, recyclerView);
-                //recyclerView.SetAdapter(newMAdapter);
-
-                //MyAdapter LoadNewAdapter = new MyAdapter(mAdapter.data, this, this.homeScreenMenu, this.recyclerView);
                 recyclerView.SetAdapter(mAdapter);
 
                 mAdapter.NotifyDataSetChanged();
-
-                //disni panggil yang untuk ubah jadi edit modenya
                 return true;
             }
             if (id == Resource.Id.save_menu)
@@ -245,19 +216,11 @@ namespace SampleGrouping
                 if (updateIndicator)
                     this.recyclerView.SmoothScrollToPosition((mAdapter.LastPagePositionBeforeInEditMode * 12) - 1);
 
-
-                //ServiceProvider.GetService<IViewService>().RunOnBackgroundThread(async () =>
-                //{
-
-                //}, 0);
-
                 Task.Run(async () => 
                 {
                     await Task.Delay(3000);
                     this.IgnoreScrollStateChanged = false;
                 });
-
-                //disini panggil yg untuk save itemnya
 
                 return true;
             }
@@ -268,13 +231,6 @@ namespace SampleGrouping
                 this.PageNumberText.Text = mAdapter.LastPagePositionBeforeInEditMode.ToString();
                 mAdapter.NotifyDataSetChanged();
             }
-            //if (id == Resource.Id.add_item)
-            //{
-            //    mAdapter.AddItems();
-            //    mAdapter.NotifyDataSetChanged();
-            //    //disini handle untuk add itemsnya
-            //    return true;
-            //}
 
             return base.OnOptionsItemSelected(item);
         }
@@ -315,7 +271,6 @@ namespace SampleGrouping
             double convertZ = (Convert.ToDouble(z));
             double hasilBagi = (convertZ + 1) / 12;
             int ceilingHasil = (Convert.ToInt32(Math.Ceiling(hasilBagi)));
-            //this.MainActivity.HandlePageIndicator(ceilingHasil);
             return ceilingHasil;
         }
 

@@ -98,12 +98,63 @@ namespace SampleGrouping
             var checkPageSizeNow = homeScreenMenu.pageSize;
             var updateCheckPageSize = checkPageSizeNow - 1;
             var pagePositionNow = this.LastPagePositionBeforeInEditMode;
-
             homeScreenMenu.pageSize = updateCheckPageSize;
-
-            //this.LoadDataAfterDeletePage();
+            //harus ada function yg untuk hapus data item di page yg mau di delete
+            this.DeleteItemInPageDeleted(pagePositionNow, checkPageSizeNow);
+            //harus ada funtion yg untuk update data itemnya
+            if (this.LastPagePositionBeforeInEditMode > homeScreenMenu.pageSize)
+            {
+                //ini dalam kondisi harus di lempar ke page sebelum page yg dihapus
+                var pageToShow = (this.LastPagePositionBeforeInEditMode - 1);
+                this.LastPagePositionBeforeInEditMode = pageToShow;
+            }
+            else
+            {
+                //kondisi dia tetap di page yg skrg 
+            }
+            this.LoadDataAfterAddPage(this.LastPagePositionBeforeInEditMode);
 
             return homeScreenMenu;
+        }
+        public void DeleteItemInPageDeleted(int pagePositionToDelete, int oldPageSize)
+        {
+            var lastItemPositionInPageDeleted = (12 * pagePositionToDelete);
+            var startItemPositionInPageDeleted = (lastItemPositionInPageDeleted - 12);
+
+            for (int i = startItemPositionInPageDeleted; i < lastItemPositionInPageDeleted; i ++)
+            {
+                List<HomeScreenMenuItem> itemToDeleteFromData = this.data.Where(o => o.ItemPosition == i && o.IsDeleted == false).ToList();
+                List<HomeScreenMenuItem> itemToDeleteFromLastSavedData = this.LastSavedData.Where(o => o.ItemPosition == i && o.IsDeleted == false).ToList();
+
+                foreach (HomeScreenMenuItem item in itemToDeleteFromData)
+                {
+                    item.IsDeleted = true;
+                    foreach (HomeScreenMenuItem itemFromSavedData in itemToDeleteFromLastSavedData)
+                        itemFromSavedData.IsDeleted = item.IsDeleted;
+                }
+
+                this.NotifyItemChanged(i);
+            }
+
+            //update juga item yg ada di page setelah page yg skrg
+            if (pagePositionToDelete < oldPageSize)
+            {
+                var lastItemPositionInOldPageSizeToMove = (12 * oldPageSize);
+                var startItemPositionInOldPageSizeToMove = (lastItemPositionInPageDeleted);
+
+                for (int i = startItemPositionInOldPageSizeToMove; i < lastItemPositionInOldPageSizeToMove; i++)
+                {
+                    List<HomeScreenMenuItem> itemToMovePositionFromLastSavedData = this.LastSavedData.Where(o => o.ItemPosition == i && o.IsDeleted == false).ToList();
+
+                    foreach (HomeScreenMenuItem itemFromSavedData in itemToMovePositionFromLastSavedData)
+                    {
+                        var savedLastPosition = itemFromSavedData.ItemPosition;
+                        itemFromSavedData.ItemPosition = savedLastPosition - 12;
+                    }
+                    this.NotifyItemChanged(i);
+                }
+                //List<HomeScreenMenuItem> itemToMovePositionFromData = this.
+            }
         }
         public void AddItems(int Position)
         {
@@ -804,11 +855,6 @@ namespace SampleGrouping
                         CardContainer.Visibility = ViewStates.Gone;
                 }
             }
-
-            //disini coba handle ketika dalam edit mode berarti orientation kan kebawah jadi custome ulang ukuran linear container dan card container
-
-            //disini ketika tidak dalam edit mode berarti orientationnya kan ke samping jadi set ulang si linear container dan carad container
-
             //disini handle kalau dia type yg grouping munculin yg bagian grouping
             if (!string.IsNullOrEmpty(itemProduct.ItemType))
             {
@@ -955,38 +1001,26 @@ namespace SampleGrouping
             //disini untuk munculin tanda x di edit modenya
             if (this.isModeEditNow)
             {
-                int fragmentHeight = this.MainActivity.Window.DecorView.Height;
-                int fragmentWidth = this.MainActivity.Window.DecorView.Width;
+                int fragmentHeight = this.RecyclerView.Height;
 
                 int cardElevation = dpToPx((int)4);
-
-                int width = 0;
                 int height = 0;
 
                 var getLayoutManager = this.RecyclerView.GetLayoutManager();
                 RelativeLayout RelativeContainerToCustome = holder.ItemView.FindViewById<RelativeLayout>(Resource.Id.RelativeContainer);
 
-                width = (fragmentWidth) / 3;
-                height = ((fragmentHeight / 4) - (8 * 2) - (cardElevation * 8));
-                //height = ((fragmentHeight / 4) - (8 * 2) - (cardElevation * 9) - 15);
-
-                var gapBetweenHeightEditAndNot = height - this.MarginToLinearLayout;
-
-                height = height - gapBetweenHeightEditAndNot + 5;
+                height = (fragmentHeight / 4);
 
                 if (h.RelativeContainer != null)
                 {
                     RecyclerView.LayoutParams param = (RecyclerView.LayoutParams)h.RelativeContainer.LayoutParameters;
-                    param.Width = width;
                     param.Height = height;
-                    param.BottomMargin = gapBetweenHeightEditAndNot;
                     h.RelativeContainer.LayoutParameters = param;
                     h.RelativeContainer.Visibility = ViewStates.Visible;
                 }
                 if (h.CardContainer != null)
                 {
                     ViewGroup.LayoutParams param = h.CardContainer.LayoutParameters;
-                    param.Width = width;
                     param.Height = height;
                     h.CardContainer.LayoutParameters = param;
                     h.CardContainer.Visibility = ViewStates.Visible;
@@ -1009,53 +1043,28 @@ namespace SampleGrouping
 
             if (!this.isModeEditNow)
             {
-                int fragmentHeight = this.MainActivity.Window.DecorView.Height;
                 int fragmentWidth = this.MainActivity.Window.DecorView.Width;
                 //int cardMargin = dpToPx((int)5);
                 int cardElevation = dpToPx((int)4);
 
-                if (h.CardContainer != null)
-                {
-                    ViewGroup.MarginLayoutParams param = (ViewGroup.MarginLayoutParams)h.CardContainer.LayoutParameters;
-                    this.MarginCardView = param.BottomMargin;
-                }
-                if (this.RecyclerView != null)
-                {
-                    RecyclerView.MarginLayoutParams param = (RecyclerView.MarginLayoutParams)this.RecyclerView.LayoutParameters;
-                    this.MarginCardView = param.BottomMargin;
-                }
-                if (h.RelativeContainer != null)
-                {
-                    ViewGroup.MarginLayoutParams param = (ViewGroup.MarginLayoutParams)h.RelativeContainer.LayoutParameters;
-                    this.MarginCardView = param.BottomMargin;
-                }
-
                 int width = 0;
-                int height = 0;
 
                 var getLayoutManager = this.RecyclerView.GetLayoutManager();
                 RelativeLayout RelativeContainerToCustome = holder.ItemView.FindViewById<RelativeLayout>(Resource.Id.RelativeContainer);
 
                 width = (fragmentWidth) / 3;
-                height = ((fragmentHeight / 4) - (8 * 2) - (cardElevation * 9));
-
-                this.MarginToLinearLayout = height;
 
                 if (h.RelativeContainer != null)
                 {
                     RecyclerView.LayoutParams param = (RecyclerView.LayoutParams)h.RelativeContainer.LayoutParameters;
-                    //var checkGap = param
                     param.Width = width;
-                    param.Height = height;
                     h.RelativeContainer.LayoutParameters = param;
                     h.RelativeContainer.Visibility = ViewStates.Visible;
                 }
                 if (h.CardContainer != null)
                 {
                     ViewGroup.LayoutParams param = h.CardContainer.LayoutParameters;
-                    //RecyclerView.LayoutParams param = (RecyclerView.LayoutParams)h.CardContainer.LayoutParameters;
                     param.Width = width;
-                    param.Height = height;
                     h.CardContainer.LayoutParameters = param;
                     h.CardContainer.Visibility = ViewStates.Visible;
                 }
