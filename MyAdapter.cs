@@ -553,6 +553,17 @@ namespace SampleGrouping
                         }
                     }
                 }
+                else
+                {
+                    HomeScreenMenuItem emptyItem = new HomeScreenMenuItem();
+                    emptyItem.ItemPosition = x;
+                    //emptyItem.ItemName = "New Item" + i;
+                    emptyItem.HomeScreenMenuItemId = Guid.NewGuid();
+                    //emptyItem.ItemType = "product";
+                    emptyItem.HomeScreenMenuId = this.HomeScreenMenu.homeScreenMenuId;
+
+                    newDataGenerated.Add(emptyItem);
+                }
             }
             this.data = newDataGenerated;
             this.NotifyDataSetChanged();
