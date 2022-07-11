@@ -234,7 +234,28 @@ namespace SampleGrouping
 
             return base.OnOptionsItemSelected(item);
         }
+        public void ShowUndo()
+        {
+            Snackbar snackBar = Snackbar.Make(this.recyclerView, mAdapter.GetUndoTitle(), Snackbar.LengthLong);
+            snackBar.SetAction("Undo Action", new ClickListener(this.DummyFunction, ""));
+            snackBar.Show();
+        }
+        public void DummyFunction(object parameter)
+        {
+            //System.Diagnostics.Debug.Write("Test Undo Click");
+            if (mAdapter.LastActionDoing == "DeleteItem")
+                mAdapter.UndoDeletedItem();
+            if (mAdapter.LastActionDoing == "DeletePage")
+            {
+                HomeScreenMenu getUpdatedHomeScreenMenu= mAdapter.UndoDeletePage(this.homeScreenMenu);
+                this.homeScreenMenu = getUpdatedHomeScreenMenu;
+                if (mAdapter.isPageMovedAfterDeletePage)
+                    this.PageNumberText.Text = mAdapter.LastPagePositionBeforeInEditMode.ToString();
+                mAdapter.NotifyDataSetChanged();
+                //this.PageNumberText 
 
+            }
+        }
         private void FabOnClick(object sender, EventArgs eventArgs)
         {
             View view = (View)sender;
@@ -335,6 +356,39 @@ namespace SampleGrouping
             this.PageNumberText.Text = mAdapter.LastPagePositionBeforeInEditMode.ToString();
             mAdapter.NotifyDataSetChanged();
         }
+    }
+    internal class ClickListener : Java.Lang.Object, View.IOnClickListener
+    {
+        #region Constructors
+
+        internal ClickListener(Action<object> callback, object parameter)
+        {
+            this.CallBack = callback;
+            this.Parameter = parameter;
+        }
+
+        #endregion
+
+        #region Properties
+
+        private Action<object> CallBack { get; set; }
+
+        private object Parameter { get; set; }
+
+        #endregion
+
+        #region IOnClickListener Members
+
+        /// <summary>
+        /// Called when presenter is clicked
+        /// </summary>
+        /// <param name="v">The presenter view.</param>
+        public void OnClick(View v)
+        {
+            this.CallBack(this.Parameter);
+        }
+
+        #endregion
     }
     public class OnScrollListener : RecyclerView.OnScrollListener
     {

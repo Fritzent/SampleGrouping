@@ -69,6 +69,11 @@ namespace SampleGrouping
         public HomeScreenMenu HomeScreenMenu { get; set; }
         public int LastPagePositionBeforeInEditMode { get; set; }
         public List<HomeScreenMenuItem> LastSavedData { get; set; }
+
+        public string LastActionDoing { get; set; }
+        public List<HomeScreenMenuItem> LastItemsUpdated { get; set; }
+        public List<HomeScreenMenuItem> ItemThatPositionMoveInDeletePage { get; set; }
+        public bool isPageMovedAfterDeletePage { get; set; }
         #endregion
 
         public MyAdapter(List<HomeScreenMenuItem> data, MainActivity mainActivity, HomeScreenMenu homeScreenMenu, RecyclerView recyclerView)
@@ -82,6 +87,28 @@ namespace SampleGrouping
 
         }
 
+        public string GetUndoTitle()
+        {
+            string title = "";
+            if (this.LastItemsUpdated != null && this.LastActionDoing == "DeleteItem")
+            {
+                int index = 0;
+                foreach (var item in this.LastItemsUpdated)
+                {
+                    title += item.ItemName;
+                    if (index < this.LastItemsUpdated.Count - 1)
+                        title += ", ";
+                    index++;
+                }
+                if (this.LastActionDoing == "DeleteItem")
+                    title += " Deleted";
+            }
+            if (this.LastActionDoing == "DeletePage")
+            {
+                title = "Page Deleted";
+            }
+            return title;
+        }
         public HomeScreenMenu AddPage(HomeScreenMenu homeScreenMenu) 
         {
             var checkPageSizeNow = homeScreenMenu.pageSize;
@@ -107,12 +134,15 @@ namespace SampleGrouping
                 //ini dalam kondisi harus di lempar ke page sebelum page yg dihapus
                 var pageToShow = (this.LastPagePositionBeforeInEditMode - 1);
                 this.LastPagePositionBeforeInEditMode = pageToShow;
+                this.isPageMovedAfterDeletePage = true;
             }
             else
             {
                 //kondisi dia tetap di page yg skrg 
+                this.isPageMovedAfterDeletePage = false;
             }
             this.LoadDataAfterAddPage(this.LastPagePositionBeforeInEditMode);
+            this.MainActivity.ShowUndo();
 
             return homeScreenMenu;
         }
@@ -120,6 +150,8 @@ namespace SampleGrouping
         {
             var lastItemPositionInPageDeleted = (12 * pagePositionToDelete);
             var startItemPositionInPageDeleted = (lastItemPositionInPageDeleted - 12);
+            List<HomeScreenMenuItem> lastItemsUpdated = new List<HomeScreenMenuItem>();
+            List<HomeScreenMenuItem> savedItemThatPositionMoveAfterDeletePage = new List<HomeScreenMenuItem>();
 
             for (int i = startItemPositionInPageDeleted; i < lastItemPositionInPageDeleted; i ++)
             {
@@ -131,6 +163,8 @@ namespace SampleGrouping
                     item.IsDeleted = true;
                     foreach (HomeScreenMenuItem itemFromSavedData in itemToDeleteFromLastSavedData)
                         itemFromSavedData.IsDeleted = item.IsDeleted;
+
+                    lastItemsUpdated.Add(item);
                 }
 
                 this.NotifyItemChanged(i);
@@ -150,11 +184,16 @@ namespace SampleGrouping
                     {
                         var savedLastPosition = itemFromSavedData.ItemPosition;
                         itemFromSavedData.ItemPosition = savedLastPosition - 12;
+                        savedItemThatPositionMoveAfterDeletePage.Add(itemFromSavedData);
                     }
                     this.NotifyItemChanged(i);
                 }
                 //List<HomeScreenMenuItem> itemToMovePositionFromData = this.
             }
+
+            this.LastItemsUpdated = lastItemsUpdated;
+            this.ItemThatPositionMoveInDeletePage = savedItemThatPositionMoveAfterDeletePage;
+            this.LastActionDoing = "DeletePage";
         }
         public void AddItems(int Position)
         {
@@ -188,11 +227,85 @@ namespace SampleGrouping
         public void DeleteItems(int Position)
         {
             List<HomeScreenMenuItem> itemToDelete = this.data.Where(o => o.ItemPosition == Position).ToList();
+            List<HomeScreenMenuItem> lastItemsUpdated = new List<HomeScreenMenuItem>();
+
             foreach (HomeScreenMenuItem item in itemToDelete)
+            {
                 item.IsDeleted = true;
+                lastItemsUpdated.Add(item);
+            }
+            this.LastItemsUpdated = lastItemsUpdated;
+            this.LastActionDoing = "DeleteItem";
 
             this.LoadData(this.data, this.HomeScreenMenu);
             this.NotifyItemChanged(Position);
+            this.MainActivity.ShowUndo();
+            //this.OnPropertyChanged("ShowUndo");
+        }
+        public void UndoDeletedItem()
+        {
+            if (this.LastItemsUpdated != null)
+            {
+                foreach (var item in this.LastItemsUpdated)
+                {
+                    List<HomeScreenMenuItem> itemInData = this.data.Where(o => o.ItemPosition == item.ItemPosition && o.IsDeleted == false).ToList();
+                    item.IsDeleted = false;
+                    foreach (var itemToChange in itemInData)
+                    {
+                        itemToChange.IsDeleted = item.IsDeleted;
+                        itemToChange.ItemName = item.ItemName;
+                        itemToChange.ItemType = item.ItemType;
+                        itemToChange.ListGroupItemName = item.ListGroupItemName;
+                        itemToChange.GroupName = item.GroupName;
+                        itemToChange.HomeScreenMenuId = item.HomeScreenMenuId;
+                        itemToChange.HomeScreenMenuItemId = item.HomeScreenMenuItemId;
+                    }
+                    this.NotifyItemChanged(item.ItemPosition);
+                }
+            }
+        }
+        public HomeScreenMenu UndoDeletePage(HomeScreenMenu homeScreenMenu)
+        {
+            var checkPageSizeNow = homeScreenMenu.pageSize;
+            var updateCheckPageSize = checkPageSizeNow + 1;
+            var pagePositionNow = this.LastPagePositionBeforeInEditMode;
+            homeScreenMenu.pageSize = updateCheckPageSize;
+
+            foreach (HomeScreenMenuItem itemToMoveBack in this.ItemThatPositionMoveInDeletePage)
+            {
+                var savedLastPosition = itemToMoveBack.ItemPosition;
+                itemToMoveBack.ItemPosition = savedLastPosition + 12;
+                List<HomeScreenMenuItem> itemToMoveFromLastSavedData = this.LastSavedData.Where(o => o.ItemPosition == itemToMoveBack.ItemPosition && o.IsDeleted == false).ToList();
+                List<HomeScreenMenuItem> itemToMoveFromData = this.data.Where(o => o.ItemPosition == itemToMoveBack.ItemPosition && o.IsDeleted == false).ToList();
+
+                foreach (var item in itemToMoveFromLastSavedData)
+                    item.ItemPosition = itemToMoveBack.ItemPosition;
+                foreach (var itemData in itemToMoveFromData)
+                    itemData.ItemPosition = itemToMoveBack.ItemPosition;
+            }
+
+            foreach (HomeScreenMenuItem itemToRestore in this.LastItemsUpdated)
+            {
+                List<HomeScreenMenuItem> itemInLastSaved = this.LastSavedData.Where(o => o.ItemPosition == itemToRestore.ItemPosition && o.HomeScreenMenuItemId == itemToRestore.HomeScreenMenuItemId && o.IsDeleted == true).ToList();
+                if (itemInLastSaved != null)
+                {
+                    foreach (var item in itemInLastSaved)
+                        item.IsDeleted = false;
+                }
+            }
+
+            if (this.isPageMovedAfterDeletePage)
+            {
+                var saveLastPagePosition = this.LastPagePositionBeforeInEditMode;
+                this.LastPagePositionBeforeInEditMode = saveLastPagePosition + 1;
+                this.LoadDataAfterAddPage(this.LastPagePositionBeforeInEditMode);
+            }
+            else
+            {
+                this.LoadDataAfterAddPage(this.LastPagePositionBeforeInEditMode);
+            }
+
+            return homeScreenMenu;
         }
         public void LoadData(List<HomeScreenMenuItem> data, HomeScreenMenu homeScreenMenu)
         {
