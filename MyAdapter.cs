@@ -17,18 +17,19 @@ namespace SampleGrouping
     public class MyAdapter : RecyclerView.Adapter, ItemMoveCallback.ItemTouchHelperContract, View.IOnClickListener
     {
         #region Fields
-        private Dictionary<int, List<HomeScreenMenuItem>> _groupingDictionary;
+        private Dictionary<Guid, List<HomeScreenMenuItem>> _groupingDictionary;
         private int _targetPositionToShowIndicatorGrouping;
         private bool _isIndicatorGroupingShowForTarget;
         #endregion
         #region Properties
+        public int LayoutPosition { get; set; }
         public List<HomeScreenMenuItem> data;
-        public Dictionary<int, List<HomeScreenMenuItem>> GroupDictionary
+        public Dictionary<Guid, List<HomeScreenMenuItem>> GroupDictionary
         {
             get
             {
                 if (_groupingDictionary == null)
-                    _groupingDictionary = new Dictionary<int, List<HomeScreenMenuItem>>();
+                    _groupingDictionary = new Dictionary<Guid, List<HomeScreenMenuItem>>();
                 return _groupingDictionary;
             }
             set
@@ -155,8 +156,8 @@ namespace SampleGrouping
 
             for (int i = startItemPositionInPageDeleted; i < lastItemPositionInPageDeleted; i ++)
             {
-                List<HomeScreenMenuItem> itemToDeleteFromData = this.data.Where(o => o.ItemPosition == i && o.IsDeleted == false).ToList();
-                List<HomeScreenMenuItem> itemToDeleteFromLastSavedData = this.LastSavedData.Where(o => o.ItemPosition == i && o.IsDeleted == false).ToList();
+                List<HomeScreenMenuItem> itemToDeleteFromData = this.data.Where(o => o.ItemPositionForEdit == i && o.IsDeleted == false).ToList();
+                List<HomeScreenMenuItem> itemToDeleteFromLastSavedData = this.LastSavedData.Where(o => o.ItemPositionForEdit == i && o.IsDeleted == false).ToList();
 
                 foreach (HomeScreenMenuItem item in itemToDeleteFromData)
                 {
@@ -178,12 +179,16 @@ namespace SampleGrouping
 
                 for (int i = startItemPositionInOldPageSizeToMove; i < lastItemPositionInOldPageSizeToMove; i++)
                 {
-                    List<HomeScreenMenuItem> itemToMovePositionFromLastSavedData = this.LastSavedData.Where(o => o.ItemPosition == i && o.IsDeleted == false).ToList();
+                    List<HomeScreenMenuItem> itemToMovePositionFromLastSavedData = this.LastSavedData.Where(o => o.ItemPositionForEdit == i && o.IsDeleted == false).ToList();
 
                     foreach (HomeScreenMenuItem itemFromSavedData in itemToMovePositionFromLastSavedData)
                     {
-                        var savedLastPosition = itemFromSavedData.ItemPosition;
+                        var savedLastPosition = itemFromSavedData.ItemPositionForEdit;
                         itemFromSavedData.ItemPosition = savedLastPosition - 12;
+                        //var column = 3;
+                        //var row = 4;
+                        //var countItemPosition = ((itemFromSavedData.ItemPositionForEdit / 12) * 12) + ((itemFromSavedData.ItemPositionForEdit % column) * row) + ((itemFromSavedData.ItemPositionForEdit % 12) / column);
+                        //itemFromSavedData.ItemPosition = countItemPosition;
                         savedItemThatPositionMoveAfterDeletePage.Add(itemFromSavedData);
                     }
                     this.NotifyItemChanged(i);
@@ -197,13 +202,18 @@ namespace SampleGrouping
         }
         public void AddItems(int Position)
         {
-            List<HomeScreenMenuItem> getItemsInPosition = this.data.Where(o => o.ItemPosition == Position).ToList();
-            List<HomeScreenMenuItem> getItemsInPositionFromLastSavedData = this.LastSavedData.Where(o => o.ItemPosition == Position).ToList();
+            List<HomeScreenMenuItem> getItemsInPosition = this.data.Where(o => o.ItemPositionForEdit == Position).ToList();
+            List<HomeScreenMenuItem> getItemsInPositionFromLastSavedData = this.LastSavedData.Where(o => o.ItemPositionForEdit == Position).ToList();
 
             if (getItemsInPosition.Count > 0 && getItemsInPositionFromLastSavedData.Count > 0)
             {
                 foreach (HomeScreenMenuItem item in getItemsInPosition)
                 {
+                    ///item.ItemPositionForEdit = Position;
+                    var column = 3;
+                    var row = 4;
+                    var countItemPosition = ((Position / 12) * 12) + ((Position % column) * row) + ((Position % 12) / column);
+                    item.ItemPosition = countItemPosition;
                     item.ItemName = "NewItems" + item.ItemPosition;
                     item.IsDeleted = false;
                     item.ItemType = "product";
@@ -212,6 +222,8 @@ namespace SampleGrouping
 
                     foreach (HomeScreenMenuItem itemInLastSavedData in getItemsInPositionFromLastSavedData)
                     {
+                        //itemInLastSavedData.ItemPositionForEdit = item.ItemPositionForEdit;
+                        itemInLastSavedData.ItemPosition = item.ItemPosition;
                         itemInLastSavedData.ItemName = item.ItemName;
                         itemInLastSavedData.IsDeleted = item.IsDeleted;
                         itemInLastSavedData.ItemType = item.ItemType;
@@ -226,18 +238,22 @@ namespace SampleGrouping
         }
         public void DeleteItems(int Position)
         {
-            List<HomeScreenMenuItem> itemToDelete = this.data.Where(o => o.ItemPosition == Position).ToList();
+            List<HomeScreenMenuItem> itemToDelete = this.data.Where(o => o.ItemPositionForEdit == Position).ToList();
+            List<HomeScreenMenuItem> itemToDeleteInSavedData = this.LastSavedData.Where(o => o.ItemPositionForEdit == Position).ToList();
             List<HomeScreenMenuItem> lastItemsUpdated = new List<HomeScreenMenuItem>();
 
             foreach (HomeScreenMenuItem item in itemToDelete)
             {
                 item.IsDeleted = true;
                 lastItemsUpdated.Add(item);
+                foreach (HomeScreenMenuItem itemInSavedData in itemToDeleteInSavedData)
+                    itemInSavedData.IsDeleted = item.IsDeleted;
             }
             this.LastItemsUpdated = lastItemsUpdated;
             this.LastActionDoing = "DeleteItem";
 
-            this.LoadData(this.data, this.HomeScreenMenu);
+            //this.LoadData(this.data, this.HomeScreenMenu);
+            this.LoadDataAfterDeleteItem(this.LastPagePositionBeforeInEditMode);
             this.NotifyItemChanged(Position);
             this.MainActivity.ShowUndo();
             //this.OnPropertyChanged("ShowUndo");
@@ -248,10 +264,12 @@ namespace SampleGrouping
             {
                 foreach (var item in this.LastItemsUpdated)
                 {
-                    List<HomeScreenMenuItem> itemInData = this.data.Where(o => o.ItemPosition == item.ItemPosition && o.IsDeleted == false).ToList();
+                    List<HomeScreenMenuItem> itemInData = this.data.Where(o => o.ItemPositionForEdit == item.ItemPositionForEdit && o.IsDeleted == false).ToList();
                     item.IsDeleted = false;
                     foreach (var itemToChange in itemInData)
                     {
+                        itemToChange.ItemPosition = item.ItemPosition;
+                        //itemToChange.ItemPositionForEdit = item.ItemPositionForEdit;
                         itemToChange.IsDeleted = item.IsDeleted;
                         itemToChange.ItemName = item.ItemName;
                         itemToChange.ItemType = item.ItemType;
@@ -260,7 +278,7 @@ namespace SampleGrouping
                         itemToChange.HomeScreenMenuId = item.HomeScreenMenuId;
                         itemToChange.HomeScreenMenuItemId = item.HomeScreenMenuItemId;
                     }
-                    this.NotifyItemChanged(item.ItemPosition);
+                    this.NotifyItemChanged(item.ItemPositionForEdit);
                 }
             }
         }
@@ -273,20 +291,32 @@ namespace SampleGrouping
 
             foreach (HomeScreenMenuItem itemToMoveBack in this.ItemThatPositionMoveInDeletePage)
             {
-                var savedLastPosition = itemToMoveBack.ItemPosition;
+                var savedLastPosition = itemToMoveBack.ItemPositionForEdit;
                 itemToMoveBack.ItemPosition = savedLastPosition + 12;
-                List<HomeScreenMenuItem> itemToMoveFromLastSavedData = this.LastSavedData.Where(o => o.ItemPosition == itemToMoveBack.ItemPosition && o.IsDeleted == false).ToList();
-                List<HomeScreenMenuItem> itemToMoveFromData = this.data.Where(o => o.ItemPosition == itemToMoveBack.ItemPosition && o.IsDeleted == false).ToList();
+                List<HomeScreenMenuItem> itemToMoveFromLastSavedData = this.LastSavedData.Where(o => o.ItemPositionForEdit == itemToMoveBack.ItemPositionForEdit && o.IsDeleted == false).ToList();
+                List<HomeScreenMenuItem> itemToMoveFromData = this.data.Where(o => o.ItemPositionForEdit == itemToMoveBack.ItemPositionForEdit && o.IsDeleted == false).ToList();
 
                 foreach (var item in itemToMoveFromLastSavedData)
+                {
                     item.ItemPosition = itemToMoveBack.ItemPosition;
+                    //var column = 3;
+                    //var row = 4;
+                    //var countItemPosition = ((item.ItemPositionForEdit / 12) * 12) + ((item.ItemPositionForEdit % column) * row) + ((item.ItemPositionForEdit % 12) / column);
+                    //item.ItemPosition = countItemPosition;
+                }
                 foreach (var itemData in itemToMoveFromData)
+                {
                     itemData.ItemPosition = itemToMoveBack.ItemPosition;
+                    //var column = 3;
+                    //var row = 4;
+                    //var countItemPosition = ((itemData.ItemPositionForEdit / 12) * 12) + ((itemData.ItemPositionForEdit % column) * row) + ((itemData.ItemPositionForEdit % 12) / column);
+                    //itemData.ItemPosition = countItemPosition;
+                }
             }
 
             foreach (HomeScreenMenuItem itemToRestore in this.LastItemsUpdated)
             {
-                List<HomeScreenMenuItem> itemInLastSaved = this.LastSavedData.Where(o => o.ItemPosition == itemToRestore.ItemPosition && o.HomeScreenMenuItemId == itemToRestore.HomeScreenMenuItemId && o.IsDeleted == true).ToList();
+                List<HomeScreenMenuItem> itemInLastSaved = this.LastSavedData.Where(o => o.ItemPositionForEdit == itemToRestore.ItemPositionForEdit && o.HomeScreenMenuItemId == itemToRestore.HomeScreenMenuItemId && o.IsDeleted == true).ToList();
                 if (itemInLastSaved != null)
                 {
                     foreach (var item in itemInLastSaved)
@@ -328,8 +358,8 @@ namespace SampleGrouping
                                 List<HomeScreenMenuItem> getGroupItem = data.Where(o => o.ItemPosition == item.ItemPosition).ToList();
                                 foreach (HomeScreenMenuItem eachItem in getGroupItem)
                                 {
-                                    if (!this.GroupDictionary.ContainsKey(eachItem.ItemPosition))
-                                        this.GroupDictionary.Add(eachItem.ItemPosition, getGroupItem);
+                                    if (!this.GroupDictionary.ContainsKey(eachItem.GroupingId))
+                                        this.GroupDictionary.Add(eachItem.GroupingId, getGroupItem);
                                 }
                                 var LastItemInThisGroup = getGroupItem.Last();
 
@@ -337,7 +367,7 @@ namespace SampleGrouping
                                 {
                                     item.ListGroupItemName = new List<string>();
 
-                                    List<HomeScreenMenuItem> itemsInDictionary = this.GroupDictionary[item.ItemPosition];
+                                    List<HomeScreenMenuItem> itemsInDictionary = this.GroupDictionary[item.GroupingId];
 
                                     foreach (HomeScreenMenuItem itemInDictionary in itemsInDictionary)
                                     {
@@ -405,7 +435,7 @@ namespace SampleGrouping
 
             for (int i = x; i < y; i++)
             {
-                List<HomeScreenMenuItem> findItem = data.Where(o => o.ItemPosition == i && o.IsDeleted == false).ToList();
+                List<HomeScreenMenuItem> findItem = data.Where(o => o.ItemPositionForEdit == i && o.IsDeleted == false).ToList();
                 if (findItem.Count > 0)
                 {
                     foreach (HomeScreenMenuItem item in findItem)
@@ -414,11 +444,11 @@ namespace SampleGrouping
                         {
                             if (!string.IsNullOrEmpty(item.GroupName))
                             {
-                                List<HomeScreenMenuItem> getGroupItem = data.Where(o => o.ItemPosition == item.ItemPosition).ToList();
+                                List<HomeScreenMenuItem> getGroupItem = data.Where(o => o.ItemPositionForEdit == item.ItemPositionForEdit).ToList();
                                 foreach (HomeScreenMenuItem eachItem in getGroupItem)
                                 {
-                                    if (!this.GroupDictionary.ContainsKey(eachItem.ItemPosition))
-                                        this.GroupDictionary.Add(eachItem.ItemPosition, getGroupItem);
+                                    if (!this.GroupDictionary.ContainsKey(eachItem.GroupingId))
+                                        this.GroupDictionary.Add(eachItem.GroupingId, getGroupItem);
                                 }
                                 var LastItemInThisGroup = getGroupItem.Last();
 
@@ -426,7 +456,7 @@ namespace SampleGrouping
                                 {
                                     item.ListGroupItemName = new List<string>();
 
-                                    List<HomeScreenMenuItem> itemsInDictionary = this.GroupDictionary[item.ItemPosition];
+                                    List<HomeScreenMenuItem> itemsInDictionary = this.GroupDictionary[item.GroupingId];
 
                                     foreach (HomeScreenMenuItem itemInDictionary in itemsInDictionary)
                                     {
@@ -458,7 +488,11 @@ namespace SampleGrouping
                         else
                         {
                             HomeScreenMenuItem emptyItem = new HomeScreenMenuItem();
-                            emptyItem.ItemPosition = i;
+                            //emptyItem.ItemPositionForEdit = i;
+                            var column = 3;
+                            var row = 4;
+                            var countItemPosition = ((i / 12) * 12) + ((i % column) * row) + ((i % 12) / column);
+                            emptyItem.ItemPosition = countItemPosition;
                             //emptyItem.ItemName = "New Item" + (i + 1);
                             emptyItem.HomeScreenMenuItemId = Guid.NewGuid();
                             emptyItem.HomeScreenMenuId = homeScreenMenu.homeScreenMenuId;
@@ -470,7 +504,11 @@ namespace SampleGrouping
                 else
                 {
                     HomeScreenMenuItem emptyItem = new HomeScreenMenuItem();
-                    emptyItem.ItemPosition = i;
+                    //emptyItem.ItemPositionForEdit = i;
+                    var column = 3;
+                    var row = 4;
+                    var countItemPosition = ((i / 12) * 12) + ((i % column) * row) + ((i % 12) / column);
+                    emptyItem.ItemPosition = countItemPosition;
                     //emptyItem.ItemName = "New Item" + i;
                     emptyItem.HomeScreenMenuItemId = Guid.NewGuid();
                     //emptyItem.ItemType = "product";
@@ -482,6 +520,103 @@ namespace SampleGrouping
             this.LastSavedData = data;
             this.data = itemGenerated;
         }
+        public void LoadDataAfterDeleteItem (int pagePosition)
+        {
+            this.LastPagePositionBeforeInEditMode = pagePosition;
+            var data = this.data;
+            var homeScreenMenu = this.HomeScreenMenu;
+
+            var y = pagePosition * 12;
+            var x = y - 12;
+
+            List<HomeScreenMenuItem> itemGenerated = new List<HomeScreenMenuItem>();
+
+            for (int i = x; i < y; i++)
+            {
+                List<HomeScreenMenuItem> findItem = data.Where(o => o.ItemPositionForEdit == i && o.IsDeleted == false).ToList();
+                if (findItem.Count > 0)
+                {
+                    foreach (HomeScreenMenuItem item in findItem)
+                    {
+                        if (item != null)
+                        {
+                            if (!string.IsNullOrEmpty(item.GroupName))
+                            {
+                                List<HomeScreenMenuItem> getGroupItem = data.Where(o => o.ItemPositionForEdit == item.ItemPositionForEdit).ToList();
+                                foreach (HomeScreenMenuItem eachItem in getGroupItem)
+                                {
+                                    if (!this.GroupDictionary.ContainsKey(eachItem.GroupingId))
+                                        this.GroupDictionary.Add(eachItem.GroupingId, getGroupItem);
+                                }
+                                var LastItemInThisGroup = getGroupItem.Last();
+
+                                if (item.HomeScreenMenuItemId == LastItemInThisGroup.HomeScreenMenuItemId)
+                                {
+                                    item.ListGroupItemName = new List<string>();
+
+                                    List<HomeScreenMenuItem> itemsInDictionary = this.GroupDictionary[item.GroupingId];
+
+                                    foreach (HomeScreenMenuItem itemInDictionary in itemsInDictionary)
+                                    {
+                                        if (itemInDictionary.HomeScreenMenuItemId != item.HomeScreenMenuItemId)
+                                        {
+                                            if (itemInDictionary.ItemType == "product")
+                                            {
+                                                if (itemInDictionary.ItemName != null)
+                                                    item.ListGroupItemName.Add(itemInDictionary.ItemName);
+                                            }
+                                        }
+                                        else
+                                        {
+                                            if (item.ItemType == "product")
+                                            {
+                                                if (item.ItemName != null)
+                                                    item.ListGroupItemName.Add(item.ItemName);
+                                            }
+                                        }
+                                    }
+                                    itemGenerated.Add(item);
+                                }
+                            }
+                            else
+                            {
+                                itemGenerated.Add(item);
+                            }
+                        }
+                        else
+                        {
+                            HomeScreenMenuItem emptyItem = new HomeScreenMenuItem();
+                            //emptyItem.ItemPositionForEdit = i;
+                            var column = 3;
+                            var row = 4;
+                            var countItemPosition = ((i / 12) * 12) + ((i % column) * row) + ((i % 12) / column);
+                            emptyItem.ItemPosition = countItemPosition;
+                            //emptyItem.ItemName = "New Item" + (i + 1);
+                            emptyItem.HomeScreenMenuItemId = Guid.NewGuid();
+                            emptyItem.HomeScreenMenuId = homeScreenMenu.homeScreenMenuId;
+
+                            itemGenerated.Add(emptyItem);
+                        }
+                    }
+                }
+                else
+                {
+                    HomeScreenMenuItem emptyItem = new HomeScreenMenuItem();
+                    //emptyItem.ItemPositionForEdit = i;
+                    var column = 3;
+                    var row = 4;
+                    var countItemPosition = ((i / 12) * 12) + ((i % column) * row) + ((i % 12) / column);
+                    emptyItem.ItemPosition = countItemPosition;
+                    //emptyItem.ItemName = "New Item" + i;
+                    emptyItem.HomeScreenMenuItemId = Guid.NewGuid();
+                    //emptyItem.ItemType = "product";
+                    emptyItem.HomeScreenMenuId = homeScreenMenu.homeScreenMenuId;
+
+                    itemGenerated.Add(emptyItem);
+                }
+            }
+            this.data = itemGenerated;
+        }
         public bool LoadDataAfterGrouping()
         {
             List<HomeScreenMenuItem> dataSource = this.data.ToList();
@@ -490,7 +625,7 @@ namespace SampleGrouping
             for (int x = 0; x < dataSource.Count(); x++)
             {
                 //List<HomeScreenMenuItem> findItemInResult = homeScreenItemResult.Where(o => o.Position == x && o.IsDeleted == false).ToList();
-                List<HomeScreenMenuItem> findItemInDataSource = this.data.Where(o => o.ItemPosition == x).ToList();
+                List<HomeScreenMenuItem> findItemInDataSource = this.data.Where(o => o.ItemPositionForEdit == x).ToList();
 
                 if (findItemInDataSource.Count() > 0)
                 {
@@ -501,16 +636,16 @@ namespace SampleGrouping
                             if (!string.IsNullOrEmpty(item.GroupName))
                             {
                                 //List<HomeScreenMenuItem> getGroupItem = homeScreenItemResult.Where(o => o.Position == item.Position).ToList();
-                                List<HomeScreenMenuItem> getGroupItemInDataSource = dataSource.Where(o => o.ItemPosition == item.ItemPosition).ToList();
+                                List<HomeScreenMenuItem> getGroupItemInDataSource = dataSource.Where(o => o.ItemPositionForEdit == item.ItemPositionForEdit).ToList();
 
                                 foreach (var eachItem in getGroupItemInDataSource)
                                 {
-                                    if (!this.GroupDictionary.ContainsKey(eachItem.ItemPosition))
-                                        this.GroupDictionary.Add(eachItem.ItemPosition, getGroupItemInDataSource);
-                                    if (this.GroupDictionary.ContainsKey(eachItem.ItemPosition))
+                                    if (!this.GroupDictionary.ContainsKey(eachItem.GroupingId))
+                                        this.GroupDictionary.Add(eachItem.GroupingId, getGroupItemInDataSource);
+                                    if (this.GroupDictionary.ContainsKey(eachItem.GroupingId))
                                     {
-                                        if (!this.GroupDictionary[eachItem.ItemPosition].Contains(eachItem))
-                                            this.GroupDictionary[eachItem.ItemPosition].Add(eachItem);
+                                        if (!this.GroupDictionary[eachItem.GroupingId].Contains(eachItem))
+                                            this.GroupDictionary[eachItem.GroupingId].Add(eachItem);
                                     }
                                 }
 
@@ -520,7 +655,7 @@ namespace SampleGrouping
                                 {
                                     item.ListGroupItemName = new List<string>();
 
-                                    List<HomeScreenMenuItem> itemsInDictionary = this.GroupDictionary[item.ItemPosition];
+                                    List<HomeScreenMenuItem> itemsInDictionary = this.GroupDictionary[item.GroupingId];
 
                                     foreach (HomeScreenMenuItem itemInDictionary in itemsInDictionary)
                                     {
@@ -556,7 +691,11 @@ namespace SampleGrouping
                 else
                 {
                     HomeScreenMenuItem emptyItem = new HomeScreenMenuItem();
-                    emptyItem.ItemPosition = x;
+                    //emptyItem.ItemPositionForEdit = x;
+                    var column = 3;
+                    var row = 4;
+                    var countItemPosition = ((x / 12) * 12) + ((x % column) * row) + ((x % 12) / column);
+                    emptyItem.ItemPosition = countItemPosition;
                     //emptyItem.ItemName = "New Item" + i;
                     emptyItem.HomeScreenMenuItemId = Guid.NewGuid();
                     //emptyItem.ItemType = "product";
@@ -584,7 +723,7 @@ namespace SampleGrouping
 
             for (int i = x; i < y; i++)
             {
-                List<HomeScreenMenuItem> findItem = data.Where(o => o.ItemPosition == i && o.IsDeleted == false).ToList();
+                List<HomeScreenMenuItem> findItem = data.Where(o => o.ItemPositionForEdit == i && o.IsDeleted == false).ToList();
                 if (findItem.Count > 0)
                 {
                     foreach (HomeScreenMenuItem item in findItem)
@@ -593,11 +732,11 @@ namespace SampleGrouping
                         {
                             if (!string.IsNullOrEmpty(item.GroupName))
                             {
-                                List<HomeScreenMenuItem> getGroupItem = data.Where(o => o.ItemPosition == item.ItemPosition).ToList();
+                                List<HomeScreenMenuItem> getGroupItem = data.Where(o => o.ItemPositionForEdit == item.ItemPositionForEdit).ToList();
                                 foreach (HomeScreenMenuItem eachItem in getGroupItem)
                                 {
-                                    if (!this.GroupDictionary.ContainsKey(eachItem.ItemPosition))
-                                        this.GroupDictionary.Add(eachItem.ItemPosition, getGroupItem);
+                                    if (!this.GroupDictionary.ContainsKey(eachItem.GroupingId))
+                                        this.GroupDictionary.Add(eachItem.GroupingId, getGroupItem);
                                 }
                                 var LastItemInThisGroup = getGroupItem.Last();
 
@@ -605,7 +744,7 @@ namespace SampleGrouping
                                 {
                                     item.ListGroupItemName = new List<string>();
 
-                                    List<HomeScreenMenuItem> itemsInDictionary = this.GroupDictionary[item.ItemPosition];
+                                    List<HomeScreenMenuItem> itemsInDictionary = this.GroupDictionary[item.GroupingId];
 
                                     foreach (HomeScreenMenuItem itemInDictionary in itemsInDictionary)
                                     {
@@ -637,7 +776,12 @@ namespace SampleGrouping
                         else
                         {
                             HomeScreenMenuItem emptyItem = new HomeScreenMenuItem();
-                            emptyItem.ItemPosition = i;
+                            //emptyItem.ItemPosition = i;
+                            //emptyItem.ItemPositionForEdit = i;
+                            var column = 3;
+                            var row = 4;
+                            var countItemPosition = ((i / 12) * 12) + ((i % column) * row) + ((i % 12) / column);
+                            emptyItem.ItemPosition = countItemPosition;
                             //emptyItem.ItemName = "New Item" + (i + 1);
                             emptyItem.HomeScreenMenuItemId = Guid.NewGuid();
                             emptyItem.HomeScreenMenuId = homeScreenMenu.homeScreenMenuId;
@@ -649,7 +793,12 @@ namespace SampleGrouping
                 else
                 {
                     HomeScreenMenuItem emptyItem = new HomeScreenMenuItem();
-                    emptyItem.ItemPosition = i;
+                    //emptyItem.ItemPosition = i;
+                    //emptyItem.ItemPositionForEdit = i;
+                    var column = 3;
+                    var row = 4;
+                    var countItemPosition = ((i / 12) * 12) + ((i % column) * row) + ((i % 12) / column);
+                    emptyItem.ItemPosition = countItemPosition;
                     //emptyItem.ItemName = "New Item" + i;
                     emptyItem.HomeScreenMenuItemId = Guid.NewGuid();
                     //emptyItem.ItemType = "product";
@@ -682,7 +831,7 @@ namespace SampleGrouping
 
                         for (int i = startItemPositionInNewPage; i < itemCount; i++)
                         {
-                            List<HomeScreenMenuItem> findItem = this.LastSavedData.Where(o => o.ItemPosition == i && o.IsDeleted == false).ToList();
+                            List<HomeScreenMenuItem> findItem = this.LastSavedData.Where(o => o.ItemPositionForEdit == i && o.IsDeleted == false).ToList();
                             if (findItem.Count > 0)
                             {
                                 foreach (HomeScreenMenuItem item in findItem)
@@ -691,11 +840,11 @@ namespace SampleGrouping
                                     {
                                         if (!string.IsNullOrEmpty(item.GroupName))
                                         {
-                                            List<HomeScreenMenuItem> getGroupItem = data.Where(o => o.ItemPosition == item.ItemPosition).ToList();
+                                            List<HomeScreenMenuItem> getGroupItem = this.LastSavedData.Where(o => o.ItemPositionForEdit == item.ItemPositionForEdit && o.IsDeleted == false).ToList();
                                             foreach (HomeScreenMenuItem eachItem in getGroupItem)
                                             {
-                                                if (!this.GroupDictionary.ContainsKey(eachItem.ItemPosition))
-                                                    this.GroupDictionary.Add(eachItem.ItemPosition, getGroupItem);
+                                                if (!this.GroupDictionary.ContainsKey(eachItem.GroupingId))
+                                                    this.GroupDictionary.Add(eachItem.GroupingId, getGroupItem);
                                             }
                                             var LastItemInThisGroup = getGroupItem.Last();
 
@@ -703,7 +852,7 @@ namespace SampleGrouping
                                             {
                                                 item.ListGroupItemName = new List<string>();
 
-                                                List<HomeScreenMenuItem> itemsInDictionary = this.GroupDictionary[item.ItemPosition];
+                                                List<HomeScreenMenuItem> itemsInDictionary = this.GroupDictionary[item.GroupingId];
 
                                                 foreach (HomeScreenMenuItem itemInDictionary in itemsInDictionary)
                                                 {
@@ -735,7 +884,12 @@ namespace SampleGrouping
                                     else
                                     {
                                         HomeScreenMenuItem emptyItem = new HomeScreenMenuItem();
-                                        emptyItem.ItemPosition = i;
+                                        //emptyItem.ItemPosition = i;
+                                        //emptyItem.ItemPositionForEdit = i;
+                                        var column = 3;
+                                        var row = 4;
+                                        var countItemPosition = ((i / 12) * 12) + ((i % column) * row) + ((i % 12) / column);
+                                        emptyItem.ItemPosition = countItemPosition;
                                         //emptyItem.ItemName = "New Item" + (i + 1);
                                         emptyItem.HomeScreenMenuItemId = Guid.NewGuid();
                                         emptyItem.HomeScreenMenuId = homeScreenMenu.homeScreenMenuId;
@@ -747,7 +901,12 @@ namespace SampleGrouping
                             else
                             {
                                 HomeScreenMenuItem emptyItem = new HomeScreenMenuItem();
-                                emptyItem.ItemPosition = i;
+                                //emptyItem.ItemPosition = i;
+                                //emptyItem.ItemPositionForEdit = i;
+                                var column = 3;
+                                var row = 4;
+                                var countItemPosition = ((i / 12) * 12) + ((i % column) * row) + ((i % 12) / column);
+                                emptyItem.ItemPosition = countItemPosition;
                                 //emptyItem.ItemName = "New Item" + i;
                                 emptyItem.HomeScreenMenuItemId = Guid.NewGuid();
                                 //emptyItem.ItemType = "product";
@@ -777,7 +936,7 @@ namespace SampleGrouping
 
                         for (int i = startItemPositionInNewPage; i < itemCount; i++)
                         {
-                            List<HomeScreenMenuItem> findItem = this.LastSavedData.Where(o => o.ItemPosition == i && o.IsDeleted == false).ToList();
+                            List<HomeScreenMenuItem> findItem = this.LastSavedData.Where(o => o.ItemPositionForEdit == i && o.IsDeleted == false).ToList();
                             if (findItem.Count > 0)
                             {
                                 foreach (HomeScreenMenuItem item in findItem)
@@ -786,11 +945,11 @@ namespace SampleGrouping
                                     {
                                         if (!string.IsNullOrEmpty(item.GroupName))
                                         {
-                                            List<HomeScreenMenuItem> getGroupItem = data.Where(o => o.ItemPosition == item.ItemPosition).ToList();
+                                            List<HomeScreenMenuItem> getGroupItem = this.LastSavedData.Where(o => o.ItemPositionForEdit == item.ItemPositionForEdit && o.IsDeleted == false).ToList();
                                             foreach (HomeScreenMenuItem eachItem in getGroupItem)
                                             {
-                                                if (!this.GroupDictionary.ContainsKey(eachItem.ItemPosition))
-                                                    this.GroupDictionary.Add(eachItem.ItemPosition, getGroupItem);
+                                                if (!this.GroupDictionary.ContainsKey(eachItem.GroupingId))
+                                                    this.GroupDictionary.Add(eachItem.GroupingId, getGroupItem);
                                             }
                                             var LastItemInThisGroup = getGroupItem.Last();
 
@@ -798,7 +957,7 @@ namespace SampleGrouping
                                             {
                                                 item.ListGroupItemName = new List<string>();
 
-                                                List<HomeScreenMenuItem> itemsInDictionary = this.GroupDictionary[item.ItemPosition];
+                                                List<HomeScreenMenuItem> itemsInDictionary = this.GroupDictionary[item.GroupingId];
 
                                                 foreach (HomeScreenMenuItem itemInDictionary in itemsInDictionary)
                                                 {
@@ -830,7 +989,12 @@ namespace SampleGrouping
                                     else
                                     {
                                         HomeScreenMenuItem emptyItem = new HomeScreenMenuItem();
-                                        emptyItem.ItemPosition = i;
+                                        //emptyItem.ItemPosition = i;
+                                        //emptyItem.ItemPositionForEdit = i;
+                                        var column = 3;
+                                        var row = 4;
+                                        var countItemPosition = ((i / 12) * 12) + ((i % column) * row) + ((i % 12) / column);
+                                        emptyItem.ItemPosition = countItemPosition;
                                         //emptyItem.ItemName = "New Item" + (i + 1);
                                         emptyItem.HomeScreenMenuItemId = Guid.NewGuid();
                                         emptyItem.HomeScreenMenuId = homeScreenMenu.homeScreenMenuId;
@@ -842,7 +1006,12 @@ namespace SampleGrouping
                             else
                             {
                                 HomeScreenMenuItem emptyItem = new HomeScreenMenuItem();
-                                emptyItem.ItemPosition = i;
+                                //emptyItem.ItemPosition = i;
+                                //emptyItem.ItemPositionForEdit = i;
+                                var column = 3;
+                                var row = 4;
+                                var countItemPosition = ((i / 12) * 12) + ((i % column) * row) + ((i % 12) / column);
+                                emptyItem.ItemPosition = countItemPosition;
                                 //emptyItem.ItemName = "New Item" + i;
                                 emptyItem.HomeScreenMenuItemId = Guid.NewGuid();
                                 //emptyItem.ItemType = "product";
@@ -1106,7 +1275,7 @@ namespace SampleGrouping
                         if (HomeScreenEmptyProductOnEdit != null)
                         {
                             HomeScreenEmptyProductOnEdit.Visibility = ViewStates.Visible;
-                            HomeScreenEmptyProductOnEdit.Tag = itemProduct.ItemPosition;
+                            HomeScreenEmptyProductOnEdit.Tag = itemProduct.ItemPositionForEdit;
                             HomeScreenEmptyProductOnEdit.SetOnClickListener(this);
                         }
                     }
@@ -1158,7 +1327,7 @@ namespace SampleGrouping
                         if (DeleteItems != null)
                         {
                             DeleteItems.Visibility = ViewStates.Visible;
-                            DeleteItems.Tag = itemProduct.ItemPosition;
+                            DeleteItems.Tag = itemProduct.ItemPositionForEdit;
                             DeleteItems.SetOnClickListener(this);
                         }
                     }
@@ -1346,27 +1515,269 @@ namespace SampleGrouping
         }
         public void OnRowMoved(int fromPosition, int toPosition)
         {
+            List<HomeScreenMenuItem> itemFromPosition = this.data.Where(o => o.ItemPositionForEdit == fromPosition && o.IsDeleted == false).ToList();
+            List<HomeScreenMenuItem> itemToPosition = this.data.Where(o => o.ItemPositionForEdit == toPosition && o.IsDeleted == false).ToList();
+
+
             //5 - 1
             if (fromPosition < toPosition)
             {
-                for (int i = fromPosition; i < (toPosition + 1); i++)
+                for (int i = fromPosition; i < toPosition; i++)
                 {
-                    IList<object> dataToSwap = this.data.ToList<object>();
-                    if (i != (dataToSwap.Count() - 1))
-                        Collections.Swap(dataToSwap, i, i + 1);
-                    else
-                        Collections.Swap(dataToSwap, i, i);
+                    HomeScreenMenuItem getX = this.data.FirstOrDefault(o => o.ItemPositionForEdit == i && o.IsDeleted == false);
+                    HomeScreenMenuItem getY = this.data.FirstOrDefault(o => o.ItemPositionForEdit == (i + 1) && o.IsDeleted == false);
+
+                    var getXSavedData = this.LastSavedData.Where(o => o.ItemPositionForEdit == i && o.IsDeleted == false).ToList();
+                    var getYSavedData = this.LastSavedData.Where(o => o.ItemPositionForEdit == (i + 1) && o.IsDeleted == false).ToList();
+
+                    var getXPos = i;
+                    if (getX != null)
+                        getXPos = getX.ItemPositionForEdit;
+                    var getYPos = getY.ItemPositionForEdit;
+
+                    if (getX != null && getY != null)
+                    {
+                        List<HomeScreenMenuItem> savedXGroupItemToChange = null;
+                        List<HomeScreenMenuItem> savedYGroupItemToChange = null;
+                        if (!string.IsNullOrEmpty(getX.GroupName))
+                        {
+                            if (this.GroupDictionary.ContainsKey(getX.GroupingId))
+                            {
+                                List<HomeScreenMenuItem> findAllItemInGrouping = this.GroupDictionary[getX.GroupingId];
+
+                                if (this.GroupDictionary.ContainsKey(getX.GroupingId))
+                                {
+                                    savedXGroupItemToChange = this.GroupDictionary[getX.GroupingId];
+                                }
+
+                                this.GroupDictionary.Remove(getX.GroupingId);
+                            }
+                        }
+                        if (!string.IsNullOrEmpty(getY.GroupName))
+                        {
+                            if (this.GroupDictionary.ContainsKey(getY.GroupingId))
+                            {
+                                List<HomeScreenMenuItem> findAllItemInGroupingTo = this.GroupDictionary[getY.GroupingId];
+
+                                if (this.GroupDictionary.ContainsKey(getY.GroupingId))
+                                {
+                                    savedYGroupItemToChange = this.GroupDictionary[getY.GroupingId];
+                                    this.GroupDictionary.Remove(getY.GroupingId);
+                                }
+                            }
+                        }
+
+                        if (!string.IsNullOrEmpty(getX.GroupName))
+                        {
+                            if (savedXGroupItemToChange != null)
+                            {
+                                foreach (HomeScreenMenuItem itemInGrouping in savedXGroupItemToChange)
+                                {
+                                    var row = 4;
+                                    var column = 3;
+                                    //itemInGrouping.ItemPositionForEdit = getYPos;
+                                    var CountItemPosition = ((getYPos / 12) * 12) + ((getYPos % column) * row) + ((getYPos % 12) / column);
+                                    itemInGrouping.ItemPosition = CountItemPosition;
+                                }
+
+                                this.GroupDictionary.Add(getX.GroupingId, savedXGroupItemToChange);
+                            }
+
+                            foreach (var item in getXSavedData)
+                            {
+                                var row = 4;
+                                var column = 3;
+                                //item.ItemPositionForEdit = getYPos;
+                                var CountItemPosition = ((getYPos / 12) * 12) + ((getYPos % column) * row) + ((getYPos % 12) / column);
+                                item.ItemPosition = CountItemPosition;
+                            }
+                        }
+                        else
+                        {
+                            var row = 4;
+                            var column = 3;
+                            ///getX.ItemPositionForEdit = getYPos;
+                            var CountItemPosition = ((getYPos / 12) * 12) + ((getYPos % column) * row) + ((getYPos % 12) / column);
+                            getX.ItemPosition = CountItemPosition;
+                            foreach (var item in getXSavedData)
+                            {
+                                //item.ItemPositionForEdit = getYPos;
+                                var CountItemPositionDua = ((getYPos / 12) * 12) + ((getYPos % column) * row) + ((getYPos % 12) / column);
+                                item.ItemPosition = CountItemPositionDua;
+                            }
+                        }
+
+                        //kalau nilai si getY itu merupakan item grouping
+                        if (!string.IsNullOrEmpty(getY.GroupName))
+                        {
+                            if (savedYGroupItemToChange != null)
+                            {
+                                foreach (HomeScreenMenuItem itemInGroupingTo in savedYGroupItemToChange)
+                                {
+                                    var row = 4;
+                                    var column = 3;
+                                    //itemInGroupingTo.ItemPositionForEdit = getXPos;
+                                    var CountItemPosition = ((getXPos / 12) * 12) + ((getXPos % column) * row) + ((getXPos % 12) / column);
+                                    itemInGroupingTo.ItemPosition = CountItemPosition;
+                                }
+
+                                this.GroupDictionary.Add(getY.GroupingId, savedYGroupItemToChange);
+                            }
+
+                            foreach (var item in getYSavedData)
+                            {
+                                var row = 4;
+                                var column = 3;
+                                //item.ItemPositionForEdit = getXPos;
+                                var CountItemPosition = ((getXPos / 12) * 12) + ((getXPos % column) * row) + ((getXPos % 12) / column);
+                                item.ItemPosition = CountItemPosition;
+                            }
+                        }
+                        else
+                        {
+                            var row = 4;
+                            var column = 3;
+                            //getY.ItemPositionForEdit = getXPos;
+                            var CountItemPosition = ((getXPos / 12) * 12) + ((getXPos % column) * row) + ((getXPos % 12) / column);
+                            getY.ItemPosition = CountItemPosition;
+                            foreach (var item in getYSavedData)
+                            {
+                                //item.ItemPositionForEdit = getXPos;
+                                var CountItemPositionDua = ((getXPos / 12) * 12) + ((getXPos % column) * row) + ((getXPos % 12) / column);
+                                item.ItemPosition = CountItemPositionDua;
+                            }
+                        }
+                    }
                 }
             }
             else
             {
-                for (int i = fromPosition; i > (toPosition -1); i--)
+                for (int i = fromPosition; i > toPosition; i--)
                 {
-                    IList<object> dataToSwap = this.data.ToList<object>();
-                    if (i != 0)
-                        Collections.Swap(dataToSwap, i, (i - 1));
-                    else
-                        Collections.Swap(dataToSwap, i, i);
+                    HomeScreenMenuItem getX = this.data.FirstOrDefault(o => o.ItemPositionForEdit == i && o.IsDeleted == false);
+                    HomeScreenMenuItem getY = this.data.FirstOrDefault(o => o.ItemPositionForEdit == (i - 1) && o.IsDeleted == false);
+
+                    var getXSavedData = this.LastSavedData.Where(o => o.ItemPositionForEdit == i && o.IsDeleted == false).ToList();
+                    var getYSavedData = this.LastSavedData.Where(o => o.ItemPositionForEdit == (i - 1) && o.IsDeleted == false).ToList();
+
+                    var getXPos = i;
+                    if (getX != null)
+                        getXPos = getX.ItemPositionForEdit;
+                    var getYPos = getY.ItemPositionForEdit;
+
+                    if (getX != null && getY != null)
+                    {
+                        List<HomeScreenMenuItem> savedXGroupItemToChange = null;
+                        List<HomeScreenMenuItem> savedYGroupItemToChange = null;
+                        if (!string.IsNullOrEmpty(getX.GroupName))
+                        {
+                            if (this.GroupDictionary.ContainsKey(getX.GroupingId))
+                            {
+                                List<HomeScreenMenuItem> findAllItemInGrouping = this.GroupDictionary[getX.GroupingId];
+
+                                if (this.GroupDictionary.ContainsKey(getX.GroupingId))
+                                {
+                                    savedXGroupItemToChange = this.GroupDictionary[getX.GroupingId];
+                                }
+
+                                this.GroupDictionary.Remove(getX.GroupingId);
+                            }
+                        }
+                        if (!string.IsNullOrEmpty(getY.GroupName))
+                        {
+                            if (this.GroupDictionary.ContainsKey(getY.GroupingId))
+                            {
+                                List<HomeScreenMenuItem> findAllItemInGroupingTo = this.GroupDictionary[getY.GroupingId];
+
+                                if (this.GroupDictionary.ContainsKey(getY.GroupingId))
+                                {
+                                    savedYGroupItemToChange = this.GroupDictionary[getY.GroupingId];
+                                    this.GroupDictionary.Remove(getY.GroupingId);
+                                }
+                            }
+                        }
+
+                        if (!string.IsNullOrEmpty(getX.GroupName))
+                        {
+                            if (savedXGroupItemToChange != null)
+                            {
+                                foreach (HomeScreenMenuItem itemInGrouping in savedXGroupItemToChange)
+                                {
+                                    var column = 3;
+                                    var row = 4;
+                                    //itemInGrouping.ItemPositionForEdit = getYPos;
+                                    var CountItemPosition = ((getYPos / 12) * 12) + ((getYPos % column) * row) + ((getYPos % 12) / column);
+                                    itemInGrouping.ItemPosition = CountItemPosition;
+                                }
+
+                                this.GroupDictionary.Add(getX.GroupingId, savedXGroupItemToChange);
+                            }
+                            
+                            foreach (var item in getXSavedData)
+                            {
+                                var column = 3;
+                                var row = 4;
+                                //item.ItemPositionForEdit = getYPos;
+                                var CountItemPosition = ((getYPos / 12) * 12) + ((getYPos % column) * row) + ((getYPos % 12) / column);
+                                item.ItemPosition = CountItemPosition;
+                            }
+                        }
+                        else
+                        {
+                            var column = 3;
+                            var row = 4;
+                            //getX.ItemPositionForEdit = getYPos;
+                            var CountItemPosition = ((getYPos / 12) * 12) + ((getYPos % column) * row) + ((getYPos % 12) / column);
+                            getX.ItemPosition = CountItemPosition;
+                            foreach (var item in getXSavedData)
+                            {
+                                //item.ItemPositionForEdit = getYPos;
+                                var CountItemPositionDua = ((getYPos / 12) * 12) + ((getYPos % column) * row) + ((getYPos % 12) / column);
+                                item.ItemPosition = CountItemPositionDua;
+                            }
+                        }
+
+                        //kalau nilai si getY itu merupakan item grouping
+                        if (!string.IsNullOrEmpty(getY.GroupName))
+                        {
+                            if (savedYGroupItemToChange != null)
+                            {
+                                foreach (HomeScreenMenuItem itemInGroupingTo in savedYGroupItemToChange)
+                                {
+                                    var column = 3;
+                                    var row = 4;
+                                    //itemInGroupingTo.ItemPositionForEdit = getXPos;
+                                    var CountItemPosition = ((getXPos / 12) * 12) + ((getXPos % column) * row) + ((getXPos % 12) / column);
+                                    itemInGroupingTo.ItemPosition = CountItemPosition;
+                                }
+
+                                this.GroupDictionary.Add(getY.GroupingId, savedYGroupItemToChange);
+                            }
+
+                            foreach (var item in getYSavedData)
+                            {
+                                var column = 3;
+                                var row = 4;
+                                //item.ItemPositionForEdit = getXPos;
+                                var CountItemPosition = ((getXPos / 12) * 12) + ((getXPos % column) * row) + ((getXPos % 12) / column);
+                                item.ItemPosition = CountItemPosition;
+                            }
+                        }
+                        else
+                        {
+                            var column = 3;
+                            var row = 4;
+                            //getY.ItemPositionForEdit = getXPos;
+                            var CountItemPosition = ((getXPos / 12) * 12) + ((getXPos % column) * row) + ((getXPos % 12) / column);
+                            getY.ItemPosition = CountItemPosition;
+                            foreach (var item in getYSavedData)
+                            {
+                                //item.ItemPositionForEdit = getXPos;
+                                var CountItemPositionDua = ((getXPos / 12) * 12) + ((getXPos % column) * row) + ((getXPos % 12) / column);
+                                item.ItemPosition = CountItemPosition;
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -1375,9 +1786,9 @@ namespace SampleGrouping
             //var getItemFrom = this.Items.FirstOrDefault(o => o.Position == From);
             //var getFirstItemTo = this.Items.FirstOrDefault(o => o.Position == To);
             //var getItemTo = this.Items.Where(o => o.Position == To);
-            var getItemFrom = this.data.FirstOrDefault(o => o.ItemPosition == fromPosition);
-            var getFirstItemTo = this.data.FirstOrDefault(o => o.ItemPosition == toPosition);
-            var getItemTo = this.data.Where(o => o.ItemPosition == toPosition);
+            var getItemFrom = this.data.FirstOrDefault(o => o.ItemPositionForEdit == fromPosition);
+            var getFirstItemTo = this.data.FirstOrDefault(o => o.ItemPositionForEdit == toPosition);
+            var getItemTo = this.data.Where(o => o.ItemPositionForEdit == toPosition);
             string GroupName = "Grouping";
 
             if (getItemFrom != null && getFirstItemTo != null && getItemTo != null)
@@ -1386,7 +1797,18 @@ namespace SampleGrouping
                 {
                     if (!string.IsNullOrEmpty(getFirstItemTo.ItemType))
                     {
-                        getItemFrom.ItemPosition = toPosition;
+                        Guid generateGuid = Guid.NewGuid();
+                        //getItemFrom.ItemPositionForEdit = toPosition;
+                        //var row = 4;
+                        //var column = 3;
+                        //(pageCount * 12) + ((posUser % column) * row) + ((Position % 12) / column);
+                        //var calculateItemPosition = ((toPosition / 12) * 12) + ((toPosition % column) / row) + ((toPosition % 12) * column);
+                        getItemFrom.ItemPosition = getFirstItemTo.ItemPosition;
+
+                        if (getFirstItemTo.GroupingId != Guid.Empty)
+                            generateGuid = getFirstItemTo.GroupingId;
+
+                        getItemFrom.GroupingId = generateGuid;
                         if (getFirstItemTo.GroupName != "" || !string.IsNullOrEmpty(getFirstItemTo.GroupName))
                             getItemFrom.GroupName = getFirstItemTo.GroupName;
                         else
@@ -1395,7 +1817,10 @@ namespace SampleGrouping
                         foreach (var itemTo in getItemTo)
                         {
                             if (string.IsNullOrEmpty(itemTo.GroupName))
+                            {
                                 itemTo.GroupName = GroupName;
+                                itemTo.GroupingId = generateGuid;
+                            }
                         }
                     }
                 }
@@ -1435,7 +1860,6 @@ namespace SampleGrouping
             //public ViewGroup IndicatorGrouping;
             public object Item { get; set; }
             public Dictionary<string, View> Views { get; }
-
             public MyViewHolder(View itemView)
                 : base(itemView)
             {
@@ -1454,6 +1878,7 @@ namespace SampleGrouping
                 HomeScreenEmptyProductOnEdit = itemView.FindViewById<FrameLayout>(Resource.Id.HomeScreenEmptyProductOnEdit);
                 RelativeContainer = itemView.FindViewById<RelativeLayout>(Resource.Id.RelativeContainer);
                 CardContainer = itemView.FindViewById<AndroidX.CardView.Widget.CardView>(Resource.Id.CardContainer);
+
             }
         }
     }

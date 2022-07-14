@@ -10,6 +10,7 @@ using Google.Android.Material.Snackbar;
 using AndroidX.RecyclerView.Widget;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.Linq;
 
 namespace SampleGrouping
 {
@@ -23,6 +24,24 @@ namespace SampleGrouping
         public List<string> ListGroupItemName { get; set; }
         public string GroupName { get; set; }
         public bool IsDeleted { get; set; }
+        public Guid GroupingId { get; set; }
+        //public int _itemPositionForEdit { get; set; }
+        public int ItemPositionForEdit
+        {
+            get
+            {
+                var row = 4;
+                var column = 3;
+                var value = ((this.ItemPosition / 12) * 12) + ((this.ItemPosition % 12) / row) + ((this.ItemPosition % row) * column);
+                //_itemPositionForEdit = value;
+                return value;
+            }
+            //set
+            //{
+            //    if (_itemPositionForEdit != value)
+            //        _itemPositionForEdit = value;
+            //}
+        }
     }
     public class HomeScreenMenu
     {
@@ -35,7 +54,7 @@ namespace SampleGrouping
     public class MainActivity : AppCompatActivity
     {
         private RecyclerView recyclerView;
-        private MyAdapter mAdapter;
+        public MyAdapter mAdapter;
         HomeScreenMenu homeScreenMenu = new HomeScreenMenu();
         List<HomeScreenMenuItem> listData = new List<HomeScreenMenuItem>();
         public Android.Widget.LinearLayout PageIndicatorNotEdit;
@@ -99,19 +118,19 @@ namespace SampleGrouping
         
         public void PopulateRecyclerView()
         {
-            listData.Add(new HomeScreenMenuItem { HomeScreenMenuItemId = Guid.NewGuid(), ItemName = "item 1", ItemPosition = 0, GroupName = "", ItemType= "product", ListGroupItemName = { }, IsDeleted =false });
-            listData.Add(new HomeScreenMenuItem { HomeScreenMenuItemId = Guid.NewGuid(), ItemName = "item 2", ItemPosition = 1, GroupName = "", ItemType = "product", ListGroupItemName = { }, IsDeleted = false });
-            listData.Add(new HomeScreenMenuItem { HomeScreenMenuItemId = Guid.NewGuid(), ItemName = "item 3", ItemPosition = 2, GroupName = "", ItemType = "product", ListGroupItemName = { }, IsDeleted = false });
-            listData.Add(new HomeScreenMenuItem { HomeScreenMenuItemId = Guid.NewGuid(), ItemName = "item 4", ItemPosition = 3, GroupName = "", ItemType = "product", ListGroupItemName = { }, IsDeleted = false });
-            listData.Add(new HomeScreenMenuItem { HomeScreenMenuItemId = Guid.NewGuid(), ItemName = "item 5", ItemPosition = 4, GroupName = "", ItemType = "product", ListGroupItemName = { }, IsDeleted = false });
-            listData.Add(new HomeScreenMenuItem { HomeScreenMenuItemId = Guid.NewGuid(), ItemName = "item 6", ItemPosition = 5, GroupName = "", ItemType = "product", ListGroupItemName = { }, IsDeleted = false });
-            listData.Add(new HomeScreenMenuItem { HomeScreenMenuItemId = Guid.NewGuid(), ItemName = "item 7", ItemPosition = 6, GroupName = "", ItemType = "product", ListGroupItemName = { }, IsDeleted = false });
-            listData.Add(new HomeScreenMenuItem { HomeScreenMenuItemId = Guid.NewGuid(), ItemName = "item 8", ItemPosition = 7, GroupName = "", ItemType = "product", ListGroupItemName = { }, IsDeleted = false });
-            listData.Add(new HomeScreenMenuItem { HomeScreenMenuItemId = Guid.NewGuid(), ItemName = "item 9", ItemPosition = 8, GroupName = "", ItemType = "product", ListGroupItemName = { }, IsDeleted = false });
-            listData.Add(new HomeScreenMenuItem { HomeScreenMenuItemId = Guid.NewGuid(), ItemName = "item 10", ItemPosition = 9, GroupName = "", ItemType = "product", ListGroupItemName = { }, IsDeleted = false });
-            listData.Add(new HomeScreenMenuItem { HomeScreenMenuItemId = Guid.NewGuid(), ItemName = "item 11", ItemPosition = 10, GroupName = "", ItemType = "product", ListGroupItemName = { }, IsDeleted = false });
-            listData.Add(new HomeScreenMenuItem { HomeScreenMenuItemId = Guid.NewGuid(), ItemName = "item 12", ItemPosition = 11, GroupName = "", ItemType = "product", ListGroupItemName = { }, IsDeleted = false });
-            listData.Add(new HomeScreenMenuItem { HomeScreenMenuItemId = Guid.NewGuid(), ItemName = "item 13", ItemPosition = 12, GroupName = "", ItemType = "product", ListGroupItemName = { }, IsDeleted = false });
+            listData.Add(new HomeScreenMenuItem { HomeScreenMenuItemId = Guid.NewGuid(), ItemName = "item 1", ItemPosition = 0, GroupName = "", ItemType= "product", ListGroupItemName = { }, IsDeleted =false, GroupingId = Guid.Empty });
+            listData.Add(new HomeScreenMenuItem { HomeScreenMenuItemId = Guid.NewGuid(), ItemName = "item 2", ItemPosition = 1, GroupName = "", ItemType = "product", ListGroupItemName = { }, IsDeleted = false, GroupingId = Guid.Empty });
+            listData.Add(new HomeScreenMenuItem { HomeScreenMenuItemId = Guid.NewGuid(), ItemName = "item 3", ItemPosition = 2, GroupName = "", ItemType = "product", ListGroupItemName = { }, IsDeleted = false, GroupingId = Guid.Empty });
+            listData.Add(new HomeScreenMenuItem { HomeScreenMenuItemId = Guid.NewGuid(), ItemName = "item 4", ItemPosition = 3, GroupName = "", ItemType = "product", ListGroupItemName = { }, IsDeleted = false, GroupingId = Guid.Empty });
+            listData.Add(new HomeScreenMenuItem { HomeScreenMenuItemId = Guid.NewGuid(), ItemName = "item 5", ItemPosition = 4, GroupName = "", ItemType = "product", ListGroupItemName = { }, IsDeleted = false, GroupingId = Guid.Empty });
+            listData.Add(new HomeScreenMenuItem { HomeScreenMenuItemId = Guid.NewGuid(), ItemName = "item 6", ItemPosition = 5, GroupName = "", ItemType = "product", ListGroupItemName = { }, IsDeleted = false, GroupingId = Guid.Empty });
+            listData.Add(new HomeScreenMenuItem { HomeScreenMenuItemId = Guid.NewGuid(), ItemName = "item 7", ItemPosition = 6, GroupName = "", ItemType = "product", ListGroupItemName = { }, IsDeleted = false, GroupingId = Guid.Empty });
+            listData.Add(new HomeScreenMenuItem { HomeScreenMenuItemId = Guid.NewGuid(), ItemName = "item 8", ItemPosition = 7, GroupName = "", ItemType = "product", ListGroupItemName = { }, IsDeleted = false, GroupingId = Guid.Empty });
+            listData.Add(new HomeScreenMenuItem { HomeScreenMenuItemId = Guid.NewGuid(), ItemName = "item 9", ItemPosition = 8, GroupName = "", ItemType = "product", ListGroupItemName = { }, IsDeleted = false, GroupingId = Guid.Empty });
+            listData.Add(new HomeScreenMenuItem { HomeScreenMenuItemId = Guid.NewGuid(), ItemName = "item 10", ItemPosition = 9, GroupName = "", ItemType = "product", ListGroupItemName = { }, IsDeleted = false, GroupingId = Guid.Empty });
+            listData.Add(new HomeScreenMenuItem { HomeScreenMenuItemId = Guid.NewGuid(), ItemName = "item 11", ItemPosition = 10, GroupName = "", ItemType = "product", ListGroupItemName = { }, IsDeleted = false, GroupingId = Guid.Empty });
+            listData.Add(new HomeScreenMenuItem { HomeScreenMenuItemId = Guid.NewGuid(), ItemName = "item 12", ItemPosition = 11, GroupName = "", ItemType = "product", ListGroupItemName = { }, IsDeleted = false, GroupingId = Guid.Empty });
+            listData.Add(new HomeScreenMenuItem { HomeScreenMenuItemId = Guid.NewGuid(), ItemName = "item 13", ItemPosition = 12, GroupName = "", ItemType = "product", ListGroupItemName = { }, IsDeleted = false, GroupingId = Guid.Empty });
 
 
             homeScreenMenu.homeScreenMenuId = Guid.NewGuid();
@@ -169,7 +188,7 @@ namespace SampleGrouping
                 var findAddItemMenu = this.DataMenu.FindItem(Resource.Id.delete_page);
                 findAddItemMenu.SetVisible(true);
 
-                ItemTouchHelper.Callback callback = new ItemMoveCallback(mAdapter, recyclerView, this);
+                ItemTouchHelper.Callback callback = new ItemMoveCallback(mAdapter, recyclerView, this, mAdapter);
                 this._mItemTouchHelper = new ItemTouchHelper(callback);
                 this._mItemTouchHelper.AttachToRecyclerView(recyclerView);
 
@@ -272,12 +291,12 @@ namespace SampleGrouping
 
         protected override void Dispose(bool disposing)
         {
-            if (this.DotDictionary != null)
-            {
-                foreach (Android.Widget.LinearLayout linearlayout in this.DotDictionary)
-                    linearlayout.Click -= DotIndicator_Click;
-                this.DotDictionary.Clear();
-            }
+            //if (this.DotDictionary != null)
+            //{
+            //    foreach (Android.Widget.LinearLayout linearlayout in this.DotDictionary)
+            //        linearlayout.Click -= DotIndicator_Click;
+            //    this.DotDictionary.Clear();
+            //}
             if (this.recyclerView != null)
                 this.recyclerView.RemoveOnScrollListener(this.OnScrollListeners);
             if (this.ImageAddPage != null)
@@ -297,16 +316,16 @@ namespace SampleGrouping
 
         public bool HandlePageIndicator(int PageActive)
         {
-            if (this.DotDictionary != null)
-            {
-                foreach (Android.Widget.LinearLayout linearLayout in this.DotDictionary)
-                    linearLayout.Click -= DotIndicator_Click;
-                this.DotDictionary.Clear();
-            }
-            else
-            {
-                this.DotDictionary = new List<Android.Widget.LinearLayout>();
-            }
+            //if (this.DotDictionary != null)
+            //{
+            //    foreach (Android.Widget.LinearLayout linearLayout in this.DotDictionary)
+            //        linearLayout.Click -= DotIndicator_Click;
+            //    this.DotDictionary.Clear();
+            //}
+            //else
+            //{
+            //    this.DotDictionary = new List<Android.Widget.LinearLayout>();
+            //}
             this.PinContainer.RemoveAllViewsInLayout();
             double itemCount = (Convert.ToDouble(mAdapter.data.Count) / 12);
             double pageIndicatorValue = Math.Ceiling(itemCount);
@@ -325,22 +344,22 @@ namespace SampleGrouping
                     linearLayout.SetBackgroundResource(Resource.Drawable.rounded_accent);
                 }
                 this.PinContainer.AddView(linearLayout);
-                this.DotDictionary.Add(linearLayout);
-                linearLayout.Tag = i;
-                linearLayout.Click += DotIndicator_Click;
+                //this.DotDictionary.Add(linearLayout);
+                //linearLayout.Tag = i;
+                //linearLayout.Click += DotIndicator_Click;
             }
             this.PinContainer.RequestLayout();
             this.PinContainer.Invalidate();
 
             return true;
         }
-        private void DotIndicator_Click(object sender, EventArgs e)
-        {
-            Android.Widget.LinearLayout view = sender as Android.Widget.LinearLayout;
-            int position = (int)view.Tag;
-            if (this.recyclerView != null)
-                this.recyclerView.SmoothScrollToPosition((position - 1) * 12);
-        }
+        //private void DotIndicator_Click(object sender, EventArgs e)
+        //{
+        //    Android.Widget.LinearLayout view = sender as Android.Widget.LinearLayout;
+        //    int position = (int)view.Tag;
+        //    if (this.recyclerView != null)
+        //        this.recyclerView.SmoothScrollToPosition((position - 1) * 12);
+        //}
         public void IndicatorOnEdit_Click(object sender, EventArgs e)
         {
             Android.Widget.LinearLayout view = sender as Android.Widget.LinearLayout;
@@ -519,12 +538,14 @@ namespace SampleGrouping
         private Activity MainActivity { get; set; }
         Android.Widget.LinearLayout GroupingIndicator { get; set; }
         Android.Widget.LinearLayout Container { get; set; }
-
-        public ItemMoveCallback(ItemTouchHelperContract adapter, RecyclerView recyclerView, Activity MainActivity)
+        public MyAdapter MyAdapter { get; set; }
+        public ItemMoveCallback(ItemTouchHelperContract adapter, RecyclerView recyclerView, Activity MainActivity, MyAdapter myAdapter)
         {
             mAdapter = adapter;
             this.RecyclerView = recyclerView;
             this.MainActivity = MainActivity;
+            this.MyAdapter = myAdapter;
+
         }
 
         public override bool IsLongPressDragEnabled => base.IsLongPressDragEnabled;
@@ -533,19 +554,34 @@ namespace SampleGrouping
 
         public override int GetMovementFlags(RecyclerView p0, RecyclerView.ViewHolder p1)
         {
-            int dragFlags = ItemTouchHelper.Up | ItemTouchHelper.Down | ItemTouchHelper.Start | ItemTouchHelper.End;
-            return MakeMovementFlags(dragFlags, 0);
-        }
+            //var data = this.MyAdapter.data;
+            var data = this.MyAdapter.data.FirstOrDefault(o => o.ItemPositionForEdit == p1.LayoutPosition);
 
+            if (!string.IsNullOrEmpty(data.ItemType))
+            {
+                int dragFlags = ItemTouchHelper.Up | ItemTouchHelper.Down | ItemTouchHelper.Start | ItemTouchHelper.End;
+                return MakeMovementFlags(dragFlags, 0);
+            }
+            else
+            {
+                int dragFlags = ItemTouchHelper.ActionStateIdle;
+                return MakeMovementFlags(dragFlags, 0);
+            }
+            
+            
+        }
         public override bool OnMove(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder,RecyclerView.ViewHolder target)
         {
             int from = viewHolder.LayoutPosition;
             int to = target.LayoutPosition;
 
-            if (this.dataFrom == -1)
-                this.dataFrom = from;
-            else
-                this.dataFrom = from;
+            this.Target = target;
+            this.ToPos = viewHolder;
+
+            //if (this.dataFrom == -1)
+            //    this.dataFrom = from;
+
+            this.dataFrom = from;
             this.dataTo = to;
 
             int[] screen = new int[2];
@@ -563,34 +599,39 @@ namespace SampleGrouping
             int diffX = Math.Abs(checkViewHolderX - checkTargetX);
             int diffY = Math.Abs(checkViewHolderY - checkTargetY);
 
-            this.DiffX = diffX;
-            this.DiffY = diffY;
+            //this.DiffX = diffX;
+            //this.DiffY = diffY;
 
-            if (diffX <= 5 || diffY <= 5)
+            if (diffX > 5 || diffY > 5)
             {
-                List<HomeScreenMenuItem> AdapterData = mAdapter.getDataAdapter();
-                var item = AdapterData[target.AdapterPosition];
-
-                //item.isIndicatorShow = true;
-                this.ActionDragTodo = false;
-                this.Adapter.NotifyItemChanged(target.LayoutPosition);
-            }
-            else if (diffX > 5 || diffY > 5)
-            {
-                List<HomeScreenMenuItem> AdapterData = mAdapter.getDataAdapter();
-                var item = AdapterData[target.AdapterPosition];
-
-                //item.isIndicatorShow = false;
-                this.ActionDragTodo = true;
-                this.Adapter.NotifyItemMoved(viewHolder.AdapterPosition, target.AdapterPosition);
+                mAdapter.OnRowMoved(this.dataFrom, this.dataTo);
+                this.Adapter.NotifyItemMoved(this.dataFrom, this.dataTo);
             }
 
+            //if (diffX <= 5 || diffY <= 5)
+            //{
+            //    this.ActionDragTodo = false;
+            //    //mAdapter.OnGrouping(this.dataFrom, this.dataTo);
+            //    //this.Adapter.NotifyItemChanged(this.dataTo);
+            //    //this.Adapter.NotifyItemChanged(target.LayoutPosition);
+            //}
+            //else if (diffX > 5 || diffY > 5)
+            //{
+            //    this.ActionDragTodo = true;
+            //    //mAdapter.OnRowMoved(this.dataFrom, this.dataTo);
+            //    this.Adapter.NotifyItemMoved(this.dataFrom, this.dataTo);
+            //}
+
+            //mAdapter.LoadDataAfterGrouping();
 
             return true;
         }
+        public RecyclerView.ViewHolder Target { get; set; }
+        public RecyclerView.ViewHolder ToPos { get; set; }
         public int DiffX { get; set; }
         public int DiffY { get; set; }
 
+        public bool IsStillDrag { get; set; }
 
         public override void OnSwiped(RecyclerView.ViewHolder p0, int p1)
         {
@@ -602,25 +643,48 @@ namespace SampleGrouping
             switch (actionState)
             {
                 case ItemTouchHelper.ActionStateIdle:
-                    if (this.ActionDragTodo)
+                    int[] screen = new int[2];
+
+                    this.ToPos.ItemView.GetLocationOnScreen(screen);
+                    //viewHolder.ItemView.GetLocationOnScreen(screen);
+
+                    int checkViewHolderX = screen[0];
+                    int checkViewHolderY = screen[1];
+
+                    this.Target.ItemView.GetLocationOnScreen(screen);
+                    //target.ItemView.GetLocationOnScreen(screen);
+
+                    int checkTargetX = screen[0];
+                    int checkTargetY = screen[1];
+
+                    int diffX = Math.Abs(checkViewHolderX - checkTargetX);
+                    int diffY = Math.Abs(checkViewHolderY - checkTargetY);
+
+                    this.DiffX = diffX;
+                    this.DiffY = diffY;
+
+                    if (diffX <= 5 || diffY <= 5)
                     {
-                        System.Diagnostics.Debug.Write("Diff X Value Move :" + this.DiffX + "Diff Y Value Move :" + this.DiffY);
-                        mAdapter.OnRowMoved(this.dataFrom, this.dataTo);
-                    }
-                    else
-                    {
-                        System.Diagnostics.Debug.Write("Diff X Value :" + this.DiffX + "Diff Y Value :" + this.DiffY );
                         mAdapter.OnGrouping(this.dataFrom, this.dataTo);
-                        mAdapter.LoadDataAfterGrouping();
-
-                        List<HomeScreenMenuItem> AdapterData = mAdapter.getDataAdapter();
-                        var item = AdapterData[this.dataTo];
-
-                        //item.isIndicatorShow = false;
+                        this.Adapter.NotifyItemChanged(this.dataTo);
                     }
-                    this.Adapter.NotifyItemChanged(this.dataTo);
 
-                    this.dataFrom = -1;
+                    //if (this.ActionDragTodo)
+                    //{
+                    //    //System.Diagnostics.Debug.Write("Diff X Value Move :" + this.DiffX + "Diff Y Value Move :" + this.DiffY);
+                    //    //this.Adapter.NotifyItemMoved(this.dataFrom, this.dataTo);
+                    //    mAdapter.OnRowMoved(this.dataFrom, this.dataTo);
+                    //    //this.Adapter.NotifyItemMoved(this.dataFrom, this.dataTo);
+                    //}
+                    //else
+                    //{
+                    //    //System.Diagnostics.Debug.Write("Diff X Value :" + this.DiffX + "Diff Y Value :" + this.DiffY);
+                    //    //this.Adapter.NotifyItemChanged(this.dataTo);
+                    //    mAdapter.OnGrouping(this.dataFrom, this.dataTo);
+                    //    //this.Adapter.NotifyItemChanged(this.dataTo);
+                    //}
+                    mAdapter.LoadDataAfterGrouping();
+                    //this.dataFrom = -1;
                     break;
             }
         }
