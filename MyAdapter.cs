@@ -18,6 +18,7 @@ namespace SampleGrouping
     {
         #region Fields
         private Dictionary<Guid, List<HomeScreenMenuItem>> _groupingDictionary;
+        private List<Location> _viewHolderLocationDictionary;
         private int _targetPositionToShowIndicatorGrouping;
         private bool _isIndicatorGroupingShowForTarget;
         #endregion
@@ -37,6 +38,22 @@ namespace SampleGrouping
                 if (_groupingDictionary != value)
                 {
                     _groupingDictionary = value;
+                }
+            }
+        }
+        public List<Location> ViewHolderLocationDictionary
+        {
+            get
+            {
+                //if (_viewHolderLocationDictionary == null)
+                //    _viewHolderLocationDictionary = new List<Location>();
+                return _viewHolderLocationDictionary;
+            }
+            set
+            {
+                if (_viewHolderLocationDictionary != value)
+                {
+                    _viewHolderLocationDictionary = value;
                 }
             }
         }
@@ -70,7 +87,6 @@ namespace SampleGrouping
         public HomeScreenMenu HomeScreenMenu { get; set; }
         public int LastPagePositionBeforeInEditMode { get; set; }
         public List<HomeScreenMenuItem> LastSavedData { get; set; }
-
         public string LastActionDoing { get; set; }
         public List<HomeScreenMenuItem> LastItemsUpdated { get; set; }
         public List<HomeScreenMenuItem> ItemThatPositionMoveInDeletePage { get; set; }
@@ -1043,6 +1059,58 @@ namespace SampleGrouping
             MyViewHolder h = holder as MyViewHolder;
 
             HomeScreenMenuItem itemProduct = data[position] as HomeScreenMenuItem;
+
+            //disini untuk save data location holdernya
+            int[] location = new int[2];
+            int locationX = location[0];
+            int locationY = location[1];
+
+            //h.ItemView.GetLocationOnScreen(location);
+            holder.ItemView.GetLocationOnScreen(location);
+
+            Location viewHolderLocationToSave = new Location();
+            viewHolderLocationToSave.viewHolderLayoutPosition = holder.LayoutPosition;
+            viewHolderLocationToSave.locationX = locationX;
+            viewHolderLocationToSave.locationY = locationY;
+
+            //List<Location> generateListLocationToSave = new List<Location>();
+            //generateListLocationToSave.Add(viewHolderLocationToSave);
+
+            if (this.ViewHolderLocationDictionary != null)
+            {
+                if (this.ViewHolderLocationDictionary.Count() != 0)
+                {
+                    foreach (Location dataLocation in this.ViewHolderLocationDictionary.ToList())
+                    {
+                        if (dataLocation.viewHolderLayoutPosition == viewHolderLocationToSave.viewHolderLayoutPosition)
+                        {
+                            //this.ViewHolderLocationDictionary[data].locationX = viewHolderLocationToSave.locationX;
+                            dataLocation.locationX = viewHolderLocationToSave.locationX;
+                            dataLocation.locationY = viewHolderLocationToSave.locationY;
+                        }
+                        else
+                        {
+                            this.ViewHolderLocationDictionary.Add(viewHolderLocationToSave);
+                        }
+                    }
+                }
+                else
+                {
+                    this.ViewHolderLocationDictionary.Add(viewHolderLocationToSave);
+                }
+            }
+            else
+            {
+                List<Location> newGenerateLocationList = new List<Location>();
+                newGenerateLocationList.Add(viewHolderLocationToSave);
+                //this.ViewHolderLocationDictionary.Add(viewHolderLocationToSave);
+                this.ViewHolderLocationDictionary = newGenerateLocationList;
+            }
+
+            //if (!this.ViewHolderLocationDictionary.ContainsKey(h.LayoutPosition))
+            //    this.ViewHolderLocationDictionary.Add(h.LayoutPosition, generateListLocationToSave);
+            //else
+            //    this.ViewHolderLocationDictionary[h.LayoutPosition].Add(viewHolderLocationToSave);
 
             if (h != null)
             {

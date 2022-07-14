@@ -14,6 +14,12 @@ using System.Linq;
 
 namespace SampleGrouping
 {
+    public class Location
+    {
+        public int viewHolderLayoutPosition { get; set; }
+        public int locationX { get; set; }
+        public int locationY { get; set; }
+    }
     public class HomeScreenMenuItem
     { 
         public Guid HomeScreenMenuId { get; set; }
@@ -573,16 +579,25 @@ namespace SampleGrouping
         public override void OnMoved(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, int fromPos, RecyclerView.ViewHolder target, int toPos, int x, int y)
         {
             base.OnMoved(recyclerView, viewHolder, fromPos, target, toPos, x, y);
+
+            System.Diagnostics.Debug.WriteLine("ONMOVED FROM " + fromPos + " TO " + toPos + "FROM2 " + x + " TO2 " + y);
+
             this.IsStillDrag = false;
         }
         public override bool OnMove(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder,RecyclerView.ViewHolder target)
         {
             this.IsStillDrag = true;
+            this.OnMoveCalled = true;
             int from = viewHolder.LayoutPosition;
             int to = target.LayoutPosition;
 
+            int from2 = viewHolder.AdapterPosition;
+            int to2 = target.AdapterPosition;
+
             this.Target = target;
             this.ToPos = viewHolder;
+
+            System.Diagnostics.Debug.WriteLine("FROM " + from + " TO " + to+ "FROM2 " + from + " TO2 " + to);
 
             //if (this.dataFrom == -1)
             //    this.dataFrom = from;
@@ -637,49 +652,98 @@ namespace SampleGrouping
         public int DiffX { get; set; }
         public int DiffY { get; set; }
         public bool IsStillDrag { get; set; }
+        public bool OnMoveCalled { get; set; }
+        public RecyclerView.ViewHolder ViewHolder { get; set; }
 
         public override void OnSwiped(RecyclerView.ViewHolder p0, int p1)
         {
             throw new NotImplementedException();
+        }
+        public override void ClearView(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder)
+        {
+            base.ClearView(recyclerView, viewHolder);
+            //this.ViewHolder = viewHolder;
         }
         public override void OnSelectedChanged(RecyclerView.ViewHolder viewHolder, int actionState)
         {
             base.OnSelectedChanged(viewHolder, actionState);
             switch (actionState)
             {
+                case ItemTouchHelper.ActionStateDrag:
+                    this.ViewHolder = viewHolder;
+                    break;
                 case ItemTouchHelper.ActionStateIdle:
+                    // Task Todo :
+                    //buat list yang nyimpan viewholder location on scrennya gitu
+                    //di dalam action state idle ini get viewHolder yg di sini ada di location mana base on x dan y nya
+                    //habis itu find yg dari list tadi yg yg punya nilai x dan y mendekati nilai dari location si viewHoldernya
+                    //trus jadikan itu patokan untuk jadi nilai target dan fromnya
+
                     //Task.Run(async () =>
                     //{
                     //    await Task.Delay(3000);
                     //    this.IsStillDrag = false;
                     //});
+                    if (!this.OnMoveCalled)
+                        return;
+                    if (this.OnMoveCalled)
+                        this.OnMoveCalled = false;
                     if (!this.IsStillDrag)
                     {
-                        int[] screen = new int[2];
 
-                        this.ToPos.ItemView.GetLocationOnScreen(screen);
+                        int[] screen = new int[2];
+                        System.Diagnostics.Debug.Write("Check viewHolder Position :" + this.ViewHolder.LayoutPosition);
+                        this.ViewHolder.ItemView.GetLocationOnScreen(screen);
                         //viewHolder.ItemView.GetLocationOnScreen(screen);
 
-                        int checkViewHolderX = screen[0];
-                        int checkViewHolderY = screen[1];
+                        int viewHolderLocationX = screen[0];
+                        int viewHolderLocationY = screen[1];
 
-                        this.Target.ItemView.GetLocationOnScreen(screen);
+                        Location viewHolderLocation = new Location();
+                        viewHolderLocation.locationX = viewHolderLocationX;
+                        viewHolderLocation.locationY = viewHolderLocationY;
+
+                        System.Diagnostics.Debug.Write("Check ViewHolderLocationDictionaryCount :" + this.MyAdapter.ViewHolderLocationDictionary.Count);
+
+                        foreach (var data in this.MyAdapter.ViewHolderLocationDictionary)
+                        {
+                            int dataLocationX = data.locationX;
+                            int dataLocationY = data.locationY;
+
+                            int diffX = Math.Abs(viewHolderLocation.locationX - dataLocationX);
+                            int diffY = Math.Abs(viewHolderLocation.locationY - dataLocationY);
+
+                            if (diffX <= 3 && diffY <= 3)
+                            {
+                                mAdapter.OnGrouping(viewHolder.LayoutPosition, data.viewHolderLayoutPosition);
+                                this.Adapter.NotifyItemChanged(viewHolder.LayoutPosition);
+                            }
+                        }
+
+                        //this.ToPos.ItemView.GetLocationOnScreen(screen);
+                        //viewHolder.ItemView.GetLocationOnScreen(screen);
+
+                        //int checkViewHolderX = screen[0];
+                        //int checkViewHolderY = screen[1];
+
+                        //this.Target.ItemView.GetLocationOnScreen(screen);
+
                         //target.ItemView.GetLocationOnScreen(screen);
 
-                        int checkTargetX = screen[0];
-                        int checkTargetY = screen[1];
+                        //int checkTargetX = screen[0];
+                        //int checkTargetY = screen[1];
 
-                        int diffX = Math.Abs(checkViewHolderX - checkTargetX);
-                        int diffY = Math.Abs(checkViewHolderY - checkTargetY);
+                        //int diffX = Math.Abs(checkViewHolderX - checkTargetX);
+                        //int diffY = Math.Abs(checkViewHolderY - checkTargetY);
 
-                        this.DiffX = diffX;
-                        this.DiffY = diffY;
+                        //this.DiffX = diffX;
+                        //this.DiffY = diffY;
 
-                        if (diffX <= 3 || diffY <= 3)
-                        {
-                            mAdapter.OnGrouping(this.dataFrom, this.dataTo);
-                            this.Adapter.NotifyItemChanged(this.dataTo);
-                        }
+                        //if (diffX <= 3 || diffY <= 3)
+                        //{
+                        //    mAdapter.OnGrouping(this.dataFrom, this.dataTo);
+                        //    this.Adapter.NotifyItemChanged(this.dataTo);
+                        //}
                     }
                     //if (this.ActionDragTodo)
                     //{
