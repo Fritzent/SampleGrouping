@@ -14,11 +14,45 @@ using System.Text;
 
 namespace SampleGrouping
 {
+    public class MyOnGlobalListener : Java.Lang.Object, ViewTreeObserver.IOnGlobalLayoutListener
+    {
+        public MyAdapter MyAdapter;
+        public RecyclerView.ViewHolder Holder;
+        public MyOnGlobalListener(MyAdapter adapter, RecyclerView.ViewHolder holder)
+        {
+            this.MyAdapter = adapter;
+            this.Holder = holder;
+        }
+        public void OnGlobalLayout()
+        {
+            int[] screenLocation = new int[2];
+            this.Holder.ItemView.GetLocationOnScreen(screenLocation);
+
+            int locationX = screenLocation[0];
+            int locationY = screenLocation[1];
+
+            Location generateLocation = new Location();
+            generateLocation.locationX = locationX;
+            generateLocation.locationY = locationY;
+
+            if (!this.MyAdapter.ViewHolderLocationDictionary.ContainsKey(this.Holder))
+            {
+                //List<Location> generateNewListLocation = new List<Location>();
+                //generateNewListLocation.Add(generateLocation);
+                this.MyAdapter.ViewHolderLocationDictionary.Add(this.Holder, generateLocation);
+            }
+            else
+            {
+                this.MyAdapter.ViewHolderLocationDictionary[this.Holder].locationX = locationX;
+                this.MyAdapter.ViewHolderLocationDictionary[this.Holder].locationY = locationY;
+            }
+        }
+    }
     public class MyAdapter : RecyclerView.Adapter, ItemMoveCallback.ItemTouchHelperContract, View.IOnClickListener
     {
         #region Fields
         private Dictionary<Guid, List<HomeScreenMenuItem>> _groupingDictionary;
-        private List<Location> _viewHolderLocationDictionary;
+        private Dictionary<RecyclerView.ViewHolder, Location> _viewHolderLocationDictionary;
         private int _targetPositionToShowIndicatorGrouping;
         private bool _isIndicatorGroupingShowForTarget;
         #endregion
@@ -42,22 +76,22 @@ namespace SampleGrouping
             }
         }
         public List<RecyclerView.ViewHolder> ListViewHolder { get; set; }
-        //public List<Location> ViewHolderLocationDictionary
-        //{
-        //    get
-        //    {
-        //        //if (_viewHolderLocationDictionary == null)
-        //        //    _viewHolderLocationDictionary = new List<Location>();
-        //        return _viewHolderLocationDictionary;
-        //    }
-        //    set
-        //    {
-        //        if (_viewHolderLocationDictionary != value)
-        //        {
-        //            _viewHolderLocationDictionary = value;
-        //        }
-        //    }
-        //}
+        public Dictionary<RecyclerView.ViewHolder, Location> ViewHolderLocationDictionary
+        {
+            get
+            {
+                if (_viewHolderLocationDictionary == null)
+                    _viewHolderLocationDictionary = new Dictionary<RecyclerView.ViewHolder, Location>();
+                return _viewHolderLocationDictionary;
+            }
+            set
+            {
+                if (_viewHolderLocationDictionary != value)
+                {
+                    _viewHolderLocationDictionary = value;
+                }
+            }
+        }
         public int TargetPositionToShowIndicatorGrouping 
         {
             get { return _targetPositionToShowIndicatorGrouping; }
@@ -1061,7 +1095,8 @@ namespace SampleGrouping
 
             HomeScreenMenuItem itemProduct = data[position] as HomeScreenMenuItem;
 
-            ////disini untuk save data location holdernya
+            holder.ItemView.ViewTreeObserver.AddOnGlobalLayoutListener(new MyOnGlobalListener(this, holder));
+            //disini untuk save data location holdernya
             //int[] location = new int[2];
             //int locationX = location[0];
             //int locationY = location[1];
@@ -1449,24 +1484,17 @@ namespace SampleGrouping
             View v = LayoutInflater.From(parent.Context).Inflate(Resource.Layout.item_layout, parent, false);
             MyViewHolder holder = new MyViewHolder(v);
 
-            List<RecyclerView.ViewHolder> newGenerated = new List<RecyclerView.ViewHolder>();
-            if (this.ListViewHolder != null)
-            {
-                if (!this.ListViewHolder.Contains(holder))
-                {
-                    this.ListViewHolder.Add(holder);
-                }
-                else
-                {
-                    this.ListViewHolder.Remove(holder);
-                    this.ListViewHolder.Add(holder);
-                }
-            }
-            else
-            {
-                newGenerated.Add(holder);
-                this.ListViewHolder = newGenerated;
-            }
+            //if (this.ListViewHolder != null)
+            //{
+            //    if (!this.ListViewHolder.Contains(holder))
+            //        this.ListViewHolder.Add(holder);
+            //}
+            //else
+            //{
+            //    List<RecyclerView.ViewHolder> generateNew = new List<RecyclerView.ViewHolder>();
+            //    generateNew.Add(holder);
+            //    this.ListViewHolder = generateNew;
+            //}
 
             ViewGroup NonGroupItemSection = holder.ItemView.FindViewById(Resource.Id.NonGroupItem) as ViewGroup;
             TextView NonGroupItemName = holder.ItemView.FindViewById(Resource.Id.ItemName) as TextView;

@@ -16,7 +16,6 @@ namespace SampleGrouping
 {
     public class Location
     {
-        public int viewHolderLayoutPosition { get; set; }
         public int locationX { get; set; }
         public int locationY { get; set; }
     }
@@ -720,21 +719,57 @@ namespace SampleGrouping
                         //    }
                         //}
 
-                        foreach (var dataHolder in this.MyAdapter.ListViewHolder)
+                        //ini yg diminta ko andry
+                        //foreach (RecyclerView.ViewHolder dataView in this.MyAdapter.ListViewHolder)
+                        //{
+                        //    //MyAdapter.MyViewHolder holder = new MyAdapter.MyViewHolder(dataView);
+                        //    int[] screenLoc = new int[2];
+
+                        //    dataView.ItemView.GetLocationOnScreen(screenLoc);
+
+                        //    int locationX = screenLoc[0];
+                        //    int locationY = screenLoc[1];
+
+                        //    int diffX = Math.Abs(viewHolderLocation.locationX - locationX);
+                        //    int diffY = Math.Abs(viewHolderLocation.locationY - locationY);
+
+                        //    if (diffX <= 3 && diffY <= 3)
+                        //    {
+                        //        mAdapter.OnGrouping(this.ViewHolder.LayoutPosition, dataView.LayoutPosition);
+                        //        this.Adapter.NotifyItemChanged(this.ViewHolder.LayoutPosition);
+                        //    }
+                        //}
+                        foreach (KeyValuePair<RecyclerView.ViewHolder, Location> dataLocation in this.MyAdapter.ViewHolderLocationDictionary)
                         {
-                            int[] screenHolder = new int[2];
-                            dataHolder.ItemView.GetLocationOnScreen(screenHolder);
-                            int locationX = screenHolder[0];
-                            int locationY = screenHolder[1];
+                            int locationX = dataLocation.Value.locationX;
+                            int locationY = dataLocation.Value.locationY;
 
                             int diffX = Math.Abs(viewHolderLocation.locationX - locationX);
                             int diffY = Math.Abs(viewHolderLocation.locationY - locationY);
+
                             if (diffX <= 3 && diffY <= 3)
                             {
-                                mAdapter.OnGrouping(this.ViewHolder.LayoutPosition, dataHolder.LayoutPosition);
+                                mAdapter.OnGrouping(this.ViewHolder.LayoutPosition, dataLocation.Key.LayoutPosition);
                                 this.Adapter.NotifyItemChanged(this.ViewHolder.LayoutPosition);
                             }
                         }
+
+
+                        //foreach (var dataHolder in this.MyAdapter.ListViewHolder)
+                        //{
+                        //    int[] screenHolder = new int[2];
+                        //    dataHolder.ItemView.GetLocationOnScreen(screenHolder);
+                        //    int locationX = screenHolder[0];
+                        //    int locationY = screenHolder[1];
+
+                        //    int diffX = Math.Abs(viewHolderLocation.locationX - locationX);
+                        //    int diffY = Math.Abs(viewHolderLocation.locationY - locationY);
+                        //    if (diffX <= 3 && diffY <= 3)
+                        //    {
+                        //        mAdapter.OnGrouping(this.ViewHolder.LayoutPosition, dataHolder.LayoutPosition);
+                        //        this.Adapter.NotifyItemChanged(this.ViewHolder.LayoutPosition);
+                        //    }
+                        //}
 
                         //this.ToPos.ItemView.GetLocationOnScreen(screen);
                         //viewHolder.ItemView.GetLocationOnScreen(screen);
