@@ -570,8 +570,14 @@ namespace SampleGrouping
             
             
         }
+        public override void OnMoved(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, int fromPos, RecyclerView.ViewHolder target, int toPos, int x, int y)
+        {
+            base.OnMoved(recyclerView, viewHolder, fromPos, target, toPos, x, y);
+            this.IsStillDrag = false;
+        }
         public override bool OnMove(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder,RecyclerView.ViewHolder target)
         {
+            this.IsStillDrag = true;
             int from = viewHolder.LayoutPosition;
             int to = target.LayoutPosition;
 
@@ -630,7 +636,6 @@ namespace SampleGrouping
         public RecyclerView.ViewHolder ToPos { get; set; }
         public int DiffX { get; set; }
         public int DiffY { get; set; }
-
         public bool IsStillDrag { get; set; }
 
         public override void OnSwiped(RecyclerView.ViewHolder p0, int p1)
@@ -643,32 +648,39 @@ namespace SampleGrouping
             switch (actionState)
             {
                 case ItemTouchHelper.ActionStateIdle:
-                    int[] screen = new int[2];
-
-                    this.ToPos.ItemView.GetLocationOnScreen(screen);
-                    //viewHolder.ItemView.GetLocationOnScreen(screen);
-
-                    int checkViewHolderX = screen[0];
-                    int checkViewHolderY = screen[1];
-
-                    this.Target.ItemView.GetLocationOnScreen(screen);
-                    //target.ItemView.GetLocationOnScreen(screen);
-
-                    int checkTargetX = screen[0];
-                    int checkTargetY = screen[1];
-
-                    int diffX = Math.Abs(checkViewHolderX - checkTargetX);
-                    int diffY = Math.Abs(checkViewHolderY - checkTargetY);
-
-                    this.DiffX = diffX;
-                    this.DiffY = diffY;
-
-                    if (diffX <= 5 || diffY <= 5)
+                    //Task.Run(async () =>
+                    //{
+                    //    await Task.Delay(3000);
+                    //    this.IsStillDrag = false;
+                    //});
+                    if (!this.IsStillDrag)
                     {
-                        mAdapter.OnGrouping(this.dataFrom, this.dataTo);
-                        this.Adapter.NotifyItemChanged(this.dataTo);
-                    }
+                        int[] screen = new int[2];
 
+                        this.ToPos.ItemView.GetLocationOnScreen(screen);
+                        //viewHolder.ItemView.GetLocationOnScreen(screen);
+
+                        int checkViewHolderX = screen[0];
+                        int checkViewHolderY = screen[1];
+
+                        this.Target.ItemView.GetLocationOnScreen(screen);
+                        //target.ItemView.GetLocationOnScreen(screen);
+
+                        int checkTargetX = screen[0];
+                        int checkTargetY = screen[1];
+
+                        int diffX = Math.Abs(checkViewHolderX - checkTargetX);
+                        int diffY = Math.Abs(checkViewHolderY - checkTargetY);
+
+                        this.DiffX = diffX;
+                        this.DiffY = diffY;
+
+                        if (diffX <= 3 || diffY <= 3)
+                        {
+                            mAdapter.OnGrouping(this.dataFrom, this.dataTo);
+                            this.Adapter.NotifyItemChanged(this.dataTo);
+                        }
+                    }
                     //if (this.ActionDragTodo)
                     //{
                     //    //System.Diagnostics.Debug.Write("Diff X Value Move :" + this.DiffX + "Diff Y Value Move :" + this.DiffY);
