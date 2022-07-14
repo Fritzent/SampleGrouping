@@ -703,20 +703,36 @@ namespace SampleGrouping
                         viewHolderLocation.locationX = viewHolderLocationX;
                         viewHolderLocation.locationY = viewHolderLocationY;
 
-                        System.Diagnostics.Debug.Write("Check ViewHolderLocationDictionaryCount :" + this.MyAdapter.ViewHolderLocationDictionary.Count);
+                        //System.Diagnostics.Debug.Write("Check ViewHolderLocationDictionaryCount :" + this.MyAdapter.ViewHolderLocationDictionary.Count);
 
-                        foreach (var data in this.MyAdapter.ViewHolderLocationDictionary)
+                        //foreach (var data in this.MyAdapter.ViewHolderLocationDictionary)
+                        //{
+                        //    int dataLocationX = data.locationX;
+                        //    int dataLocationY = data.locationY;
+
+                        //    int diffX = Math.Abs(viewHolderLocation.locationX - dataLocationX);
+                        //    int diffY = Math.Abs(viewHolderLocation.locationY - dataLocationY);
+
+                        //    if (diffX <= 3 && diffY <= 3)
+                        //    {
+                        //        mAdapter.OnGrouping(viewHolder.LayoutPosition, data.viewHolderLayoutPosition);
+                        //        this.Adapter.NotifyItemChanged(viewHolder.LayoutPosition);
+                        //    }
+                        //}
+
+                        foreach (var dataHolder in this.MyAdapter.ListViewHolder)
                         {
-                            int dataLocationX = data.locationX;
-                            int dataLocationY = data.locationY;
+                            int[] screenHolder = new int[2];
+                            dataHolder.ItemView.GetLocationOnScreen(screenHolder);
+                            int locationX = screenHolder[0];
+                            int locationY = screenHolder[1];
 
-                            int diffX = Math.Abs(viewHolderLocation.locationX - dataLocationX);
-                            int diffY = Math.Abs(viewHolderLocation.locationY - dataLocationY);
-
+                            int diffX = Math.Abs(viewHolderLocation.locationX - locationX);
+                            int diffY = Math.Abs(viewHolderLocation.locationY - locationY);
                             if (diffX <= 3 && diffY <= 3)
                             {
-                                mAdapter.OnGrouping(viewHolder.LayoutPosition, data.viewHolderLayoutPosition);
-                                this.Adapter.NotifyItemChanged(viewHolder.LayoutPosition);
+                                mAdapter.OnGrouping(this.ViewHolder.LayoutPosition, dataHolder.LayoutPosition);
+                                this.Adapter.NotifyItemChanged(this.ViewHolder.LayoutPosition);
                             }
                         }
 

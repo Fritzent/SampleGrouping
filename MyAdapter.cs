@@ -41,22 +41,23 @@ namespace SampleGrouping
                 }
             }
         }
-        public List<Location> ViewHolderLocationDictionary
-        {
-            get
-            {
-                //if (_viewHolderLocationDictionary == null)
-                //    _viewHolderLocationDictionary = new List<Location>();
-                return _viewHolderLocationDictionary;
-            }
-            set
-            {
-                if (_viewHolderLocationDictionary != value)
-                {
-                    _viewHolderLocationDictionary = value;
-                }
-            }
-        }
+        public List<RecyclerView.ViewHolder> ListViewHolder { get; set; }
+        //public List<Location> ViewHolderLocationDictionary
+        //{
+        //    get
+        //    {
+        //        //if (_viewHolderLocationDictionary == null)
+        //        //    _viewHolderLocationDictionary = new List<Location>();
+        //        return _viewHolderLocationDictionary;
+        //    }
+        //    set
+        //    {
+        //        if (_viewHolderLocationDictionary != value)
+        //        {
+        //            _viewHolderLocationDictionary = value;
+        //        }
+        //    }
+        //}
         public int TargetPositionToShowIndicatorGrouping 
         {
             get { return _targetPositionToShowIndicatorGrouping; }
@@ -1060,52 +1061,52 @@ namespace SampleGrouping
 
             HomeScreenMenuItem itemProduct = data[position] as HomeScreenMenuItem;
 
-            //disini untuk save data location holdernya
-            int[] location = new int[2];
-            int locationX = location[0];
-            int locationY = location[1];
+            ////disini untuk save data location holdernya
+            //int[] location = new int[2];
+            //int locationX = location[0];
+            //int locationY = location[1];
 
-            //h.ItemView.GetLocationOnScreen(location);
-            holder.ItemView.GetLocationOnScreen(location);
+            ////h.ItemView.GetLocationOnScreen(location);
+            //holder.ItemView.GetLocationOnScreen(location);
 
-            Location viewHolderLocationToSave = new Location();
-            viewHolderLocationToSave.viewHolderLayoutPosition = holder.LayoutPosition;
-            viewHolderLocationToSave.locationX = locationX;
-            viewHolderLocationToSave.locationY = locationY;
+            //Location viewHolderLocationToSave = new Location();
+            //viewHolderLocationToSave.viewHolderLayoutPosition = holder.LayoutPosition;
+            //viewHolderLocationToSave.locationX = locationX;
+            //viewHolderLocationToSave.locationY = locationY;
 
             //List<Location> generateListLocationToSave = new List<Location>();
             //generateListLocationToSave.Add(viewHolderLocationToSave);
 
-            if (this.ViewHolderLocationDictionary != null)
-            {
-                if (this.ViewHolderLocationDictionary.Count() != 0)
-                {
-                    foreach (Location dataLocation in this.ViewHolderLocationDictionary.ToList())
-                    {
-                        if (dataLocation.viewHolderLayoutPosition == viewHolderLocationToSave.viewHolderLayoutPosition)
-                        {
-                            //this.ViewHolderLocationDictionary[data].locationX = viewHolderLocationToSave.locationX;
-                            dataLocation.locationX = viewHolderLocationToSave.locationX;
-                            dataLocation.locationY = viewHolderLocationToSave.locationY;
-                        }
-                        else
-                        {
-                            this.ViewHolderLocationDictionary.Add(viewHolderLocationToSave);
-                        }
-                    }
-                }
-                else
-                {
-                    this.ViewHolderLocationDictionary.Add(viewHolderLocationToSave);
-                }
-            }
-            else
-            {
-                List<Location> newGenerateLocationList = new List<Location>();
-                newGenerateLocationList.Add(viewHolderLocationToSave);
-                //this.ViewHolderLocationDictionary.Add(viewHolderLocationToSave);
-                this.ViewHolderLocationDictionary = newGenerateLocationList;
-            }
+            //if (this.ViewHolderLocationDictionary != null)
+            //{
+            //    if (this.ViewHolderLocationDictionary.Count() != 0)
+            //    {
+            //        foreach (Location dataLocation in this.ViewHolderLocationDictionary.ToList())
+            //        {
+            //            if (dataLocation.viewHolderLayoutPosition == viewHolderLocationToSave.viewHolderLayoutPosition)
+            //            {
+            //                //this.ViewHolderLocationDictionary[data].locationX = viewHolderLocationToSave.locationX;
+            //                dataLocation.locationX = viewHolderLocationToSave.locationX;
+            //                dataLocation.locationY = viewHolderLocationToSave.locationY;
+            //            }
+            //            else
+            //            {
+            //                this.ViewHolderLocationDictionary.Add(viewHolderLocationToSave);
+            //            }
+            //        }
+            //    }
+            //    else
+            //    {
+            //        this.ViewHolderLocationDictionary.Add(viewHolderLocationToSave);
+            //    }
+            //}
+            //else
+            //{
+            //    List<Location> newGenerateLocationList = new List<Location>();
+            //    newGenerateLocationList.Add(viewHolderLocationToSave);
+            //    //this.ViewHolderLocationDictionary.Add(viewHolderLocationToSave);
+            //    this.ViewHolderLocationDictionary = newGenerateLocationList;
+            //}
 
             //if (!this.ViewHolderLocationDictionary.ContainsKey(h.LayoutPosition))
             //    this.ViewHolderLocationDictionary.Add(h.LayoutPosition, generateListLocationToSave);
@@ -1447,6 +1448,25 @@ namespace SampleGrouping
         {
             View v = LayoutInflater.From(parent.Context).Inflate(Resource.Layout.item_layout, parent, false);
             MyViewHolder holder = new MyViewHolder(v);
+
+            List<RecyclerView.ViewHolder> newGenerated = new List<RecyclerView.ViewHolder>();
+            if (this.ListViewHolder != null)
+            {
+                if (!this.ListViewHolder.Contains(holder))
+                {
+                    this.ListViewHolder.Add(holder);
+                }
+                else
+                {
+                    this.ListViewHolder.Remove(holder);
+                    this.ListViewHolder.Add(holder);
+                }
+            }
+            else
+            {
+                newGenerated.Add(holder);
+                this.ListViewHolder = newGenerated;
+            }
 
             ViewGroup NonGroupItemSection = holder.ItemView.FindViewById(Resource.Id.NonGroupItem) as ViewGroup;
             TextView NonGroupItemName = holder.ItemView.FindViewById(Resource.Id.ItemName) as TextView;
