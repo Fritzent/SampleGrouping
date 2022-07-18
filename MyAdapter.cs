@@ -11,9 +11,44 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using static SampleGrouping.MyAdapter;
 
 namespace SampleGrouping
 {
+    public class OnDrag : Java.Lang.Object, View.IOnDragListener
+    {
+        public RecyclerView.ViewHolder View;
+        public OnDrag(RecyclerView.ViewHolder v)
+        {
+            this.View = v;
+        }
+
+        bool View.IOnDragListener.OnDrag(View v, DragEvent e)
+        {
+            switch (e.Action)
+            {
+                //case DragAction.Entered
+                case Android.Views.DragAction.Drop:
+                    int[] screen = new int[2];
+
+                    //MyViewHolder holder = new MyViewHolder(v);
+                    MyViewHolder holder = new MyViewHolder(v);
+                    //holder.itemVie
+                    //this.View.ItemView.GetLocationOnScreen
+
+                    holder.ItemView.GetLocationOnScreen(screen);
+
+                    int checkHolderLocX = screen[0];
+                    int checkHolderLocY = screen[1];
+
+                    System.Diagnostics.Debug.Write("Check checkHolderLocX :" + checkHolderLocX);
+                    System.Diagnostics.Debug.Write("Check checkHolderLocY :" + checkHolderLocY);
+
+                    break;
+            }
+            return true;
+        }
+    }
     public class MyOnGlobalListener : Java.Lang.Object, ViewTreeObserver.IOnGlobalLayoutListener
     {
         public MyAdapter MyAdapter;
@@ -36,11 +71,7 @@ namespace SampleGrouping
             generateLocation.locationY = locationY;
 
             if (!this.MyAdapter.ViewHolderLocationDictionary.ContainsKey(this.Holder))
-            {
-                //List<Location> generateNewListLocation = new List<Location>();
-                //generateNewListLocation.Add(generateLocation);
                 this.MyAdapter.ViewHolderLocationDictionary.Add(this.Holder, generateLocation);
-            }
             else
             {
                 this.MyAdapter.ViewHolderLocationDictionary[this.Holder].locationX = locationX;
@@ -125,6 +156,7 @@ namespace SampleGrouping
         public string LastActionDoing { get; set; }
         public List<HomeScreenMenuItem> LastItemsUpdated { get; set; }
         public List<HomeScreenMenuItem> ItemThatPositionMoveInDeletePage { get; set; }
+        public MyOnGlobalListener SavedMyOnGlobalListener { get; set; }
         public bool isPageMovedAfterDeletePage { get; set; }
         #endregion
 
@@ -234,12 +266,9 @@ namespace SampleGrouping
 
                     foreach (HomeScreenMenuItem itemFromSavedData in itemToMovePositionFromLastSavedData)
                     {
-                        var savedLastPosition = itemFromSavedData.ItemPositionForEdit;
+                        var savedLastPosition = itemFromSavedData.ItemPosition;
                         itemFromSavedData.ItemPosition = savedLastPosition - 12;
-                        //var column = 3;
-                        //var row = 4;
-                        //var countItemPosition = ((itemFromSavedData.ItemPositionForEdit / 12) * 12) + ((itemFromSavedData.ItemPositionForEdit % column) * row) + ((itemFromSavedData.ItemPositionForEdit % 12) / column);
-                        //itemFromSavedData.ItemPosition = countItemPosition;
+                        
                         savedItemThatPositionMoveAfterDeletePage.Add(itemFromSavedData);
                     }
                     this.NotifyItemChanged(i);
@@ -305,6 +334,7 @@ namespace SampleGrouping
 
             //this.LoadData(this.data, this.HomeScreenMenu);
             this.LoadDataAfterDeleteItem(this.LastPagePositionBeforeInEditMode);
+            this.NotifyDataSetChanged();
             this.NotifyItemChanged(Position);
             this.MainActivity.ShowUndo();
             //this.OnPropertyChanged("ShowUndo");
@@ -329,6 +359,7 @@ namespace SampleGrouping
                         itemToChange.HomeScreenMenuId = item.HomeScreenMenuId;
                         itemToChange.HomeScreenMenuItemId = item.HomeScreenMenuItemId;
                     }
+                    this.NotifyDataSetChanged();
                     this.NotifyItemChanged(item.ItemPositionForEdit);
                 }
             }
@@ -342,7 +373,7 @@ namespace SampleGrouping
 
             foreach (HomeScreenMenuItem itemToMoveBack in this.ItemThatPositionMoveInDeletePage)
             {
-                var savedLastPosition = itemToMoveBack.ItemPositionForEdit;
+                var savedLastPosition = itemToMoveBack.ItemPosition;
                 itemToMoveBack.ItemPosition = savedLastPosition + 12;
                 List<HomeScreenMenuItem> itemToMoveFromLastSavedData = this.LastSavedData.Where(o => o.ItemPositionForEdit == itemToMoveBack.ItemPositionForEdit && o.IsDeleted == false).ToList();
                 List<HomeScreenMenuItem> itemToMoveFromData = this.data.Where(o => o.ItemPositionForEdit == itemToMoveBack.ItemPositionForEdit && o.IsDeleted == false).ToList();
@@ -1095,59 +1126,6 @@ namespace SampleGrouping
 
             HomeScreenMenuItem itemProduct = data[position] as HomeScreenMenuItem;
 
-            holder.ItemView.ViewTreeObserver.AddOnGlobalLayoutListener(new MyOnGlobalListener(this, holder));
-            //disini untuk save data location holdernya
-            //int[] location = new int[2];
-            //int locationX = location[0];
-            //int locationY = location[1];
-
-            ////h.ItemView.GetLocationOnScreen(location);
-            //holder.ItemView.GetLocationOnScreen(location);
-
-            //Location viewHolderLocationToSave = new Location();
-            //viewHolderLocationToSave.viewHolderLayoutPosition = holder.LayoutPosition;
-            //viewHolderLocationToSave.locationX = locationX;
-            //viewHolderLocationToSave.locationY = locationY;
-
-            //List<Location> generateListLocationToSave = new List<Location>();
-            //generateListLocationToSave.Add(viewHolderLocationToSave);
-
-            //if (this.ViewHolderLocationDictionary != null)
-            //{
-            //    if (this.ViewHolderLocationDictionary.Count() != 0)
-            //    {
-            //        foreach (Location dataLocation in this.ViewHolderLocationDictionary.ToList())
-            //        {
-            //            if (dataLocation.viewHolderLayoutPosition == viewHolderLocationToSave.viewHolderLayoutPosition)
-            //            {
-            //                //this.ViewHolderLocationDictionary[data].locationX = viewHolderLocationToSave.locationX;
-            //                dataLocation.locationX = viewHolderLocationToSave.locationX;
-            //                dataLocation.locationY = viewHolderLocationToSave.locationY;
-            //            }
-            //            else
-            //            {
-            //                this.ViewHolderLocationDictionary.Add(viewHolderLocationToSave);
-            //            }
-            //        }
-            //    }
-            //    else
-            //    {
-            //        this.ViewHolderLocationDictionary.Add(viewHolderLocationToSave);
-            //    }
-            //}
-            //else
-            //{
-            //    List<Location> newGenerateLocationList = new List<Location>();
-            //    newGenerateLocationList.Add(viewHolderLocationToSave);
-            //    //this.ViewHolderLocationDictionary.Add(viewHolderLocationToSave);
-            //    this.ViewHolderLocationDictionary = newGenerateLocationList;
-            //}
-
-            //if (!this.ViewHolderLocationDictionary.ContainsKey(h.LayoutPosition))
-            //    this.ViewHolderLocationDictionary.Add(h.LayoutPosition, generateListLocationToSave);
-            //else
-            //    this.ViewHolderLocationDictionary[h.LayoutPosition].Add(viewHolderLocationToSave);
-
             if (h != null)
             {
 
@@ -1250,6 +1228,12 @@ namespace SampleGrouping
                     AndroidX.CardView.Widget.CardView CardContainer = h.CardContainer as AndroidX.CardView.Widget.CardView;
                     if (CardContainer != null)
                         CardContainer.Visibility = ViewStates.Gone;
+                }
+                if (h.GroupingIndicator != null)
+                {
+                    RelativeLayout GroupingIndicator = h.GroupingIndicator as RelativeLayout;
+                    if (GroupingIndicator != null)
+                        GroupingIndicator.SetPadding(0, 0, 0, 0);
                 }
             }
             //disini handle kalau dia type yg grouping munculin yg bagian grouping
@@ -1466,6 +1450,24 @@ namespace SampleGrouping
                     h.CardContainer.Visibility = ViewStates.Visible;
                 }
             }
+            if (itemProduct.IsIndicatorGroupingShow && this.isModeEditNow)
+            {
+                if (h.GroupingIndicator != null)
+                {
+                    RelativeLayout GroupingIndicator = h.GroupingIndicator as RelativeLayout;
+                    if (GroupingIndicator != null)
+                        GroupingIndicator.SetPadding(8, 8, 8, 8);
+                }
+            }
+            if (!itemProduct.IsIndicatorGroupingShow && this.isModeEditNow)
+            {
+                if (h.GroupingIndicator != null)
+                {
+                    RelativeLayout GroupingIndicator = h.GroupingIndicator as RelativeLayout;
+                    if (GroupingIndicator != null)
+                        GroupingIndicator.SetPadding(0, 0, 0, 0);
+                }
+            }
         }
         public void OnClick(View v)
         {
@@ -1484,17 +1486,14 @@ namespace SampleGrouping
             View v = LayoutInflater.From(parent.Context).Inflate(Resource.Layout.item_layout, parent, false);
             MyViewHolder holder = new MyViewHolder(v);
 
-            //if (this.ListViewHolder != null)
-            //{
-            //    if (!this.ListViewHolder.Contains(holder))
-            //        this.ListViewHolder.Add(holder);
-            //}
-            //else
-            //{
-            //    List<RecyclerView.ViewHolder> generateNew = new List<RecyclerView.ViewHolder>();
-            //    generateNew.Add(holder);
-            //    this.ListViewHolder = generateNew;
-            //}
+            //v.SetOnDragListener(new OnDrag(holder));
+
+            //OnTouchEvent touchHelper = new OnTouchEvent(this.RecyclerView, this.MainActivity, this);
+            //holder.ItemView.SetOnTouchListener(touchHelper);
+            //this.RecyclerView.SetOnTouchListener(touchHelper);
+
+            holder.ItemView.ViewTreeObserver.AddOnGlobalLayoutListener(new MyOnGlobalListener(this, holder));
+            SavedMyOnGlobalListener = new MyOnGlobalListener(this, holder);
 
             ViewGroup NonGroupItemSection = holder.ItemView.FindViewById(Resource.Id.NonGroupItem) as ViewGroup;
             TextView NonGroupItemName = holder.ItemView.FindViewById(Resource.Id.ItemName) as TextView;
@@ -1512,7 +1511,7 @@ namespace SampleGrouping
             FrameLayout HomeScreenEmptyProductOnEdit = holder.ItemView.FindViewById(Resource.Id.HomeScreenEmptyProductOnEdit) as FrameLayout;
             RelativeLayout RelativeContainer = holder.ItemView.FindViewById(Resource.Id.RelativeContainer) as RelativeLayout;
             AndroidX.CardView.Widget.CardView CardContainer = holder.ItemView.FindViewById(Resource.Id.CardContainer) as AndroidX.CardView.Widget.CardView;
-            //ViewGroup IndicatorGrouping = holder.ItemView.FindViewById(Resource.Id.IndicatorGrouping) as ViewGroup;
+            RelativeLayout GroupingIndicator = holder.ItemView.FindViewById(Resource.Id.GroupingIndicator) as RelativeLayout;
 
             if (NonGroupItemSection != null)
                 holder.NonGroupItemSection = NonGroupItemSection;
@@ -1550,71 +1549,8 @@ namespace SampleGrouping
                 holder.RelativeContainer = RelativeContainer;
             if (CardContainer != null)
                 holder.CardContainer = CardContainer;
-
-            //if (holder != null)
-            //{
-            //    Context context = this.MainActivity;
-
-            //    int fragmentHeight = this.MainActivity.Window.DecorView.Height;
-            //    int fragmentWidth = this.MainActivity.Window.DecorView.Width;
-            //    int cardMargin = dpToPx((int)5);
-            //    int cardElevation = dpToPx((int)4);
-
-            //    int width = 0;
-            //    int height = 0;
-
-            //    var getLayoutManager = this.RecyclerView.GetLayoutManager();
-            //    RelativeLayout RelativeContainerToCustome = holder.ItemView.FindViewById<RelativeLayout>(Resource.Id.RelativeContainer);
-            //    //var spaceBetweenRow = 0;
-
-            //    //if ((this.RecyclerView.GetLayoutManager() as GridLayoutManager).Orientation == GridLayoutManager.Vertical)
-            //    //{
-            //    //    spaceBetweenRow = 3 * 5;
-            //    //}
-            //    //else
-            //    //{
-            //    //    spaceBetweenRow = 0;
-            //    //}
-
-            //    var BottomMargin = 0;
-            //    var TopMargin = 0;
-
-            //    if (RelativeContainerToCustome != null)
-            //    {
-            //        RecyclerView.LayoutParams param = (RecyclerView.LayoutParams)RelativeContainerToCustome.LayoutParameters;
-            //        BottomMargin = param.BottomMargin;
-            //        TopMargin = param.TopMargin;
-            //    }
-
-            //    width = (fragmentWidth) / 3;
-            //    // width = (int)((fragmentWidth / 3) - (8 * 2) - cardElevation - 5);
-            //    //height = (int)((fragmentHeight / 4) - (8 * 2) - (cardElevation * 9) - 15);
-            //    height = ((fragmentHeight / 4) - (8 * 2) - (cardElevation * 9) - 15);
-
-            //    //Intersoft.Crosslight.Android.v7.CardView container = holder.ContentView.FindViewById<Intersoft.Crosslight.Android.v7.CardView>(Resource.Id.container);
-            //    AndroidX.CardView.Widget.CardView container = holder.ItemView.FindViewById<AndroidX.CardView.Widget.CardView>(Resource.Id.CardContainer);
-
-            //    if (container != null)
-            //    {
-            //        ViewGroup.LayoutParams param = container.LayoutParameters;
-            //        param.Width = width;
-            //        param.Height = height;
-            //        container.LayoutParameters = param;
-            //    }
-
-            //    if (RelativeContainerToCustome != null)
-            //    {
-            //        RecyclerView.LayoutParams param = (RecyclerView.LayoutParams)RelativeContainerToCustome.LayoutParameters;
-            //        param.Width = width;
-            //        param.Height = height;
-            //        //param.SetMargins(0, 0, 0, 0);
-
-            //        RelativeContainerToCustome.LayoutParameters = param;
-            //    }
-
-            //    //int height = (int)((fragmentHeight / 3) - 5);
-
-            //}
+            if (GroupingIndicator != null)
+                holder.GroupingIndicator = GroupingIndicator;
 
             return holder;
         }
@@ -1973,6 +1909,7 @@ namespace SampleGrouping
             public FrameLayout HomeScreenEmptyProductOnEdit;
             public RelativeLayout RelativeContainer;
             public AndroidX.CardView.Widget.CardView CardContainer;
+            public RelativeLayout GroupingIndicator;
             //public ViewGroup IndicatorGrouping;
             public object Item { get; set; }
             public Dictionary<string, View> Views { get; }
@@ -1994,8 +1931,10 @@ namespace SampleGrouping
                 HomeScreenEmptyProductOnEdit = itemView.FindViewById<FrameLayout>(Resource.Id.HomeScreenEmptyProductOnEdit);
                 RelativeContainer = itemView.FindViewById<RelativeLayout>(Resource.Id.RelativeContainer);
                 CardContainer = itemView.FindViewById<AndroidX.CardView.Widget.CardView>(Resource.Id.CardContainer);
-
+                GroupingIndicator = itemView.FindViewById<RelativeLayout>(Resource.Id.GroupingIndicator);
             }
         }
+
+
     }
 }
