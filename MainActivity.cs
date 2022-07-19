@@ -76,9 +76,12 @@ namespace SampleGrouping
         public Android.Widget.ImageView ImageAddPage;
         public bool IgnoreScrollStateChanged { get; set; }
 
+        public RecyclerView.ViewHolder ViewHolderInDragging { get; set; }
+
         protected override void OnCreate(Bundle savedInstanceState)
         {
             base.OnCreate(savedInstanceState);
+
             Xamarin.Essentials.Platform.Init(this, savedInstanceState);
             SetContentView(Resource.Layout.activity_main);
 
@@ -217,6 +220,7 @@ namespace SampleGrouping
             }
             if (id == Resource.Id.save_menu)
             {
+                recyclerView.SetOnTouchListener(null);
                 this.recyclerView.AddOnScrollListener(this.OnScrollListeners);
                 this.recyclerView.NestedScrollingEnabled = true;
 
@@ -549,11 +553,11 @@ namespace SampleGrouping
             }
         }
         private RecyclerView RecyclerView { get; set; }
-        private Activity MainActivity { get; set; }
+        private MainActivity MainActivity { get; set; }
         Android.Widget.LinearLayout GroupingIndicator { get; set; }
         Android.Widget.LinearLayout Container { get; set; }
         public MyAdapter MyAdapter { get; set; }
-        public ItemMoveCallback(ItemTouchHelperContract adapter, RecyclerView recyclerView, Activity MainActivity, MyAdapter myAdapter)
+        public ItemMoveCallback(ItemTouchHelperContract adapter, RecyclerView recyclerView, MainActivity MainActivity, MyAdapter myAdapter)
         {
             mAdapter = adapter;
             this.RecyclerView = recyclerView;
@@ -590,12 +594,12 @@ namespace SampleGrouping
 
             System.Diagnostics.Debug.WriteLine("ONMOVED FROM " + fromPos + " TO " + toPos + "FROM2 " + x + " TO2 " + y);
 
-            this.IsStillDrag = false;
+            //this.IsStillDrag = false;
         }
         public override bool OnMove(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder,RecyclerView.ViewHolder target)
         {
-            this.IsStillDrag = true;
-            this.OnMoveCalled = true;
+            //this.IsStillDrag = true;
+            //this.OnMoveCalled = true;
             int from = viewHolder.LayoutPosition;
             int to = target.LayoutPosition;
 
@@ -655,86 +659,91 @@ namespace SampleGrouping
                 case ItemTouchHelper.ActionStateDrag:
                     //System.Diagnostics.Debug.Write("ActionStateDrag get Call");
                     this.ViewHolder = viewHolder;
-                    int[] screenLoc = new int[2];
+                    this.MainActivity.ViewHolderInDragging = viewHolder;
+                    //int[] screenLoc = new int[2];
 
-                    viewHolder.ItemView.GetLocationOnScreen(screenLoc);
+                    //viewHolder.ItemView.GetLocationOnScreen(screenLoc);
+                    ////viewHolder.ItemView.GetLocationOnScreen(screen);
+
+                    //int viewHolderLocationXGet = screenLoc[0];
+                    //int viewHolderLocationYGet = screenLoc[1];
+
+                    //Location viewHolderLocationToCheck = new Location();
+                    //viewHolderLocationToCheck.locationX = viewHolderLocationXGet;
+                    //viewHolderLocationToCheck.locationY = viewHolderLocationYGet;
+
+                    //foreach (KeyValuePair<RecyclerView.ViewHolder, Location> dataLocation in this.MyAdapter.ViewHolderLocationDictionary)
+                    //{
+                    //    int locationX = dataLocation.Value.locationX;
+                    //    int locationY = dataLocation.Value.locationY;
+
+                    //    int diffX = Math.Abs(viewHolderLocationToCheck.locationX - locationX);
+                    //    int diffY = Math.Abs(viewHolderLocationToCheck.locationY - locationY);
+
+                    //    if (dataLocation.Key.LayoutPosition != this.ViewHolder.LayoutPosition)
+                    //    {
+                    //        if (diffX > 3 && diffY > 3)
+                    //        {
+                    //            List<HomeScreenMenuItem> itemToChangeSizeBack = this.MyAdapter.data.Where(o => o.ItemPositionForEdit == dataLocation.Key.LayoutPosition).ToList();
+                    //            foreach (var item in itemToChangeSizeBack)
+                    //                item.IsIndicatorGroupingShow = false;
+
+                    //            //this.Adapter.NotifyDataSetChanged();
+                    //            this.Adapter.NotifyItemChanged(dataLocation.Key.LayoutPosition);
+                    //        }
+                    //        else if (diffX <= 3 && diffY <= 3)
+                    //        {
+                    //            List<HomeScreenMenuItem> itemToChangeSize = this.MyAdapter.data.Where(o => o.ItemPositionForEdit == dataLocation.Key.LayoutPosition).ToList();
+                    //            foreach (var item in itemToChangeSize)
+                    //                item.IsIndicatorGroupingShow = true;
+
+                    //            //this.Adapter.NotifyDataSetChanged();
+                    //            this.Adapter.NotifyItemChanged(dataLocation.Key.LayoutPosition);
+                    //        }
+                    //    }
+                    //}
+                    break;
+                case ItemTouchHelper.ActionStateIdle:
+                    //if (!this.OnMoveCalled)
+                    //    return;
+                    //if (this.OnMoveCalled)
+                    //    this.OnMoveCalled = false;
+
+                    //if (!this.IsStillDrag)
+                    //{
+                        
+                    //}
+
+                    int[] screen = new int[2];
+                    System.Diagnostics.Debug.Write("Check viewHolder Position :" + this.ViewHolder.LayoutPosition);
+                    this.ViewHolder.ItemView.GetLocationOnScreen(screen);
                     //viewHolder.ItemView.GetLocationOnScreen(screen);
 
-                    int viewHolderLocationXGet = screenLoc[0];
-                    int viewHolderLocationYGet = screenLoc[1];
+                    int viewHolderLocationX = screen[0];
+                    int viewHolderLocationY = screen[1];
 
-                    Location viewHolderLocationToCheck = new Location();
-                    viewHolderLocationToCheck.locationX = viewHolderLocationXGet;
-                    viewHolderLocationToCheck.locationY = viewHolderLocationYGet;
+                    Location viewHolderLocation = new Location();
+                    viewHolderLocation.locationX = viewHolderLocationX;
+                    viewHolderLocation.locationY = viewHolderLocationY;
 
                     foreach (KeyValuePair<RecyclerView.ViewHolder, Location> dataLocation in this.MyAdapter.ViewHolderLocationDictionary)
                     {
                         int locationX = dataLocation.Value.locationX;
                         int locationY = dataLocation.Value.locationY;
 
-                        int diffX = Math.Abs(viewHolderLocationToCheck.locationX - locationX);
-                        int diffY = Math.Abs(viewHolderLocationToCheck.locationY - locationY);
+                        int diffX = Math.Abs(viewHolderLocation.locationX - locationX);
+                        int diffY = Math.Abs(viewHolderLocation.locationY - locationY);
 
                         if (dataLocation.Key.LayoutPosition != this.ViewHolder.LayoutPosition)
                         {
-                            if (diffX > 3 && diffY > 3)
+                            if (diffX <= 50 && diffY <= 50)
                             {
-                                //List<HomeScreenMenuItem> itemToChangeSizeBack = this.MyAdapter.data.Where(o => o.ItemPositionForEdit == dataLocation.Key.LayoutPosition).ToList();
-                                //foreach (var item in itemToChangeSizeBack)
-                                //    item.IsIndicatorGroupingShow = false;
-
-                                //this.Adapter.NotifyDataSetChanged();
-                                this.Adapter.NotifyItemChanged(dataLocation.Key.LayoutPosition);
-                            }
-                            else if (diffX <= 3 && diffY <= 3)
-                            {
-                                //List<HomeScreenMenuItem> itemToChangeSize = this.MyAdapter.data.Where(o => o.ItemPositionForEdit == dataLocation.Key.LayoutPosition).ToList();
-                                //foreach (var item in itemToChangeSize)
-                                //    item.IsIndicatorGroupingShow = true;
-
-                                //this.Adapter.NotifyDataSetChanged();
-                                this.Adapter.NotifyItemChanged(dataLocation.Key.LayoutPosition);
+                                mAdapter.OnGrouping(this.ViewHolder.LayoutPosition, dataLocation.Key.LayoutPosition);
+                                this.Adapter.NotifyItemChanged(this.ViewHolder.LayoutPosition);
                             }
                         }
                     }
-                    break;
-                case ItemTouchHelper.ActionStateIdle:
-                    if (!this.OnMoveCalled)
-                        return;
-                    if (this.OnMoveCalled)
-                        this.OnMoveCalled = false;
-                    if (!this.IsStillDrag)
-                    {
-                        int[] screen = new int[2];
-                        System.Diagnostics.Debug.Write("Check viewHolder Position :" + this.ViewHolder.LayoutPosition);
-                        this.ViewHolder.ItemView.GetLocationOnScreen(screen);
-                        //viewHolder.ItemView.GetLocationOnScreen(screen);
 
-                        int viewHolderLocationX = screen[0];
-                        int viewHolderLocationY = screen[1];
-
-                        Location viewHolderLocation = new Location();
-                        viewHolderLocation.locationX = viewHolderLocationX;
-                        viewHolderLocation.locationY = viewHolderLocationY;
-
-                        foreach (KeyValuePair<RecyclerView.ViewHolder, Location> dataLocation in this.MyAdapter.ViewHolderLocationDictionary)
-                        {
-                            int locationX = dataLocation.Value.locationX;
-                            int locationY = dataLocation.Value.locationY;
-
-                            int diffX = Math.Abs(viewHolderLocation.locationX - locationX);
-                            int diffY = Math.Abs(viewHolderLocation.locationY - locationY);
-
-                            if (dataLocation.Key.LayoutPosition != this.ViewHolder.LayoutPosition)
-                            {
-                                if (diffX <= 3 && diffY <= 3)
-                                {
-                                    mAdapter.OnGrouping(this.ViewHolder.LayoutPosition, dataLocation.Key.LayoutPosition);
-                                    this.Adapter.NotifyItemChanged(this.ViewHolder.LayoutPosition);
-                                }
-                            }
-                        }
-                    }
                     mAdapter.LoadDataAfterGrouping();
                     //this.dataFrom = -1;
                     break;
@@ -750,103 +759,103 @@ namespace SampleGrouping
         }
     }
 
-    public class OnItemTouchHelper : Java.Lang.Object, RecyclerView.IOnItemTouchListener
-    {
-        private RecyclerView RecyclerView { get; set; }
-        private Activity MainActivity { get; set; }
-        public MyAdapter MyAdapter { get; set; }
-        private RecyclerView.Adapter Adapter
-        {
-            get
-            {
-                if (this.RecyclerView != null)
-                    return this.RecyclerView.GetAdapter();
+    //public class OnItemTouchHelper : Java.Lang.Object, RecyclerView.IOnItemTouchListener
+    //{
+    //    private RecyclerView RecyclerView { get; set; }
+    //    private Activity MainActivity { get; set; }
+    //    public MyAdapter MyAdapter { get; set; }
+    //    private RecyclerView.Adapter Adapter
+    //    {
+    //        get
+    //        {
+    //            if (this.RecyclerView != null)
+    //                return this.RecyclerView.GetAdapter();
 
-                return null;
-            }
-        }
-        public RecyclerView.ViewHolder ViewHolder { get; set; }
-        public OnItemTouchHelper (RecyclerView recyclerView, Activity MainActivity, MyAdapter myAdapter)
-        {
-            this.RecyclerView = recyclerView;
-            this.MainActivity = MainActivity;
-            this.MyAdapter = myAdapter;
-        }
-        public bool OnInterceptTouchEvent(RecyclerView recyclerView, MotionEvent e)
-        {
-            View child = recyclerView.FindChildViewUnder(e.GetX(), e.GetY());
-            switch (e.Action)
-            {
-                case MotionEventActions.Move:
-                    System.Diagnostics.Debug.Write("ActionStateDrag get Call");
+    //            return null;
+    //        }
+    //    }
+    //    public RecyclerView.ViewHolder ViewHolder { get; set; }
+    //    public OnItemTouchHelper (RecyclerView recyclerView, Activity MainActivity, MyAdapter myAdapter)
+    //    {
+    //        this.RecyclerView = recyclerView;
+    //        this.MainActivity = MainActivity;
+    //        this.MyAdapter = myAdapter;
+    //    }
+    //    public bool OnInterceptTouchEvent(RecyclerView recyclerView, MotionEvent e)
+    //    {
+    //        View child = recyclerView.FindChildViewUnder(e.GetX(), e.GetY());
+    //        switch (e.Action)
+    //        {
+    //            case MotionEventActions.Move:
+    //                System.Diagnostics.Debug.Write("ActionStateDrag get Call");
 
-                    if (child != null)
-                    {
-                        MyAdapter.MyViewHolder holder = new MyAdapter.MyViewHolder(child);
+    //                if (child != null)
+    //                {
+    //                    MyAdapter.MyViewHolder holder = new MyAdapter.MyViewHolder(child);
 
-                        var checkPostion = holder.LayoutPosition;
-                        var checkAdapterPosition = holder.AdapterPosition;
+    //                    var checkPostion = holder.LayoutPosition;
+    //                    var checkAdapterPosition = holder.AdapterPosition;
 
-                        this.ViewHolder = holder;
-                        int[] screenLoc = new int[2];
+    //                    this.ViewHolder = holder;
+    //                    int[] screenLoc = new int[2];
 
-                        this.ViewHolder.ItemView.GetLocationOnScreen(screenLoc);
-                        //viewHolder.ItemView.GetLocationOnScreen(screen);
+    //                    this.ViewHolder.ItemView.GetLocationOnScreen(screenLoc);
+    //                    //viewHolder.ItemView.GetLocationOnScreen(screen);
 
-                        int viewHolderLocationXGet = screenLoc[0];
-                        int viewHolderLocationYGet = screenLoc[1];
+    //                    int viewHolderLocationXGet = screenLoc[0];
+    //                    int viewHolderLocationYGet = screenLoc[1];
 
-                        Location viewHolderLocationToCheck = new Location();
-                        viewHolderLocationToCheck.locationX = viewHolderLocationXGet;
-                        viewHolderLocationToCheck.locationY = viewHolderLocationYGet;
+    //                    Location viewHolderLocationToCheck = new Location();
+    //                    viewHolderLocationToCheck.locationX = viewHolderLocationXGet;
+    //                    viewHolderLocationToCheck.locationY = viewHolderLocationYGet;
 
-                        foreach (KeyValuePair<RecyclerView.ViewHolder, Location> dataLocation in this.MyAdapter.ViewHolderLocationDictionary)
-                        {
-                            int locationX = dataLocation.Value.locationX;
-                            int locationY = dataLocation.Value.locationY;
+    //                    foreach (KeyValuePair<RecyclerView.ViewHolder, Location> dataLocation in this.MyAdapter.ViewHolderLocationDictionary)
+    //                    {
+    //                        int locationX = dataLocation.Value.locationX;
+    //                        int locationY = dataLocation.Value.locationY;
 
-                            int diffX = Math.Abs(viewHolderLocationToCheck.locationX - locationX);
-                            int diffY = Math.Abs(viewHolderLocationToCheck.locationY - locationY);
+    //                        int diffX = Math.Abs(viewHolderLocationToCheck.locationX - locationX);
+    //                        int diffY = Math.Abs(viewHolderLocationToCheck.locationY - locationY);
 
-                            if (dataLocation.Key.LayoutPosition != this.ViewHolder.LayoutPosition)
-                            {
-                                if (diffX > 3 && diffY > 3)
-                                {
-                                    List<HomeScreenMenuItem> itemToChangeSizeBack = this.MyAdapter.data.Where(o => o.ItemPositionForEdit == dataLocation.Key.LayoutPosition).ToList();
-                                    foreach (var item in itemToChangeSizeBack)
-                                        item.IsIndicatorGroupingShow = false;
-                                    //this.Adapter.NotifyDataSetChanged();
-                                    //this.Adapter.NotifyItemChanged(dataLocation.Key.LayoutPosition);
-                                }
-                                else if (diffX <= 3 && diffY <= 3)
-                                {
-                                    List<HomeScreenMenuItem> itemToChangeSize = this.MyAdapter.data.Where(o => o.ItemPositionForEdit == dataLocation.Key.LayoutPosition).ToList();
-                                    foreach (var item in itemToChangeSize)
-                                        item.IsIndicatorGroupingShow = true;
-                                    //this.Adapter.NotifyDataSetChanged();
-                                    //this.Adapter.NotifyItemChanged(dataLocation.Key.LayoutPosition);
-                                }
-                            }
-                        }
-                    }
-                    break;
-            }
-            return false;
-        }
-        public void OnRequestDisallowInterceptTouchEvent(bool disallow)
-        {
-            throw new NotImplementedException();
-        }
-        public void OnTouchEvent(RecyclerView recyclerView, MotionEvent @event)
-        {
-            throw new NotImplementedException();
-        }
+    //                        if (dataLocation.Key.LayoutPosition != this.ViewHolder.LayoutPosition)
+    //                        {
+    //                            if (diffX > 3 && diffY > 3)
+    //                            {
+    //                                List<HomeScreenMenuItem> itemToChangeSizeBack = this.MyAdapter.data.Where(o => o.ItemPositionForEdit == dataLocation.Key.LayoutPosition).ToList();
+    //                                foreach (var item in itemToChangeSizeBack)
+    //                                    item.IsIndicatorGroupingShow = false;
+    //                                //this.Adapter.NotifyDataSetChanged();
+    //                                //this.Adapter.NotifyItemChanged(dataLocation.Key.LayoutPosition);
+    //                            }
+    //                            else if (diffX <= 3 && diffY <= 3)
+    //                            {
+    //                                List<HomeScreenMenuItem> itemToChangeSize = this.MyAdapter.data.Where(o => o.ItemPositionForEdit == dataLocation.Key.LayoutPosition).ToList();
+    //                                foreach (var item in itemToChangeSize)
+    //                                    item.IsIndicatorGroupingShow = true;
+    //                                //this.Adapter.NotifyDataSetChanged();
+    //                                //this.Adapter.NotifyItemChanged(dataLocation.Key.LayoutPosition);
+    //                            }
+    //                        }
+    //                    }
+    //                }
+    //                break;
+    //        }
+    //        return false;
+    //    }
+    //    public void OnRequestDisallowInterceptTouchEvent(bool disallow)
+    //    {
+    //        throw new NotImplementedException();
+    //    }
+    //    public void OnTouchEvent(RecyclerView recyclerView, MotionEvent @event)
+    //    {
+    //        throw new NotImplementedException();
+    //    }
         
-    }
+    //}
     public class OnTouchEvent : Java.Lang.Object, View.IOnTouchListener
     {
         private RecyclerView RecyclerView { get; set; }
-        private Activity MainActivity { get; set; }
+        private MainActivity MainActivity { get; set; }
         public MyAdapter MyAdapter { get; set; }
         private RecyclerView.Adapter Adapter
         {
@@ -859,7 +868,7 @@ namespace SampleGrouping
             }
         }
         public RecyclerView.ViewHolder ViewHolder { get; set; }
-        public OnTouchEvent(RecyclerView recyclerView, Activity MainActivity, MyAdapter myAdapter)
+        public OnTouchEvent(RecyclerView recyclerView, MainActivity MainActivity, MyAdapter myAdapter)
         {
             this.RecyclerView = recyclerView;
             this.MainActivity = MainActivity;
@@ -874,15 +883,34 @@ namespace SampleGrouping
                 case MotionEventActions.Move:
                     System.Diagnostics.Debug.Write("ActionStateDrag get Call");
 
-                    MyAdapter.MyViewHolder holder = new MyAdapter.MyViewHolder(child);
+                    RecyclerView.ViewHolder holder = this.MainActivity.ViewHolderInDragging;
+                    if (holder==null)
+                        return false;
 
                     var checkPostion = holder.LayoutPosition;
                     var checkAdapterPosition = holder.AdapterPosition;
 
                     this.ViewHolder = holder;
+
+                    //var viewHolderWidth = 0;
+                    //var viewHolderHeight = 0;
+
+                    //Android.Widget.RelativeLayout relativeContainer = this.ViewHolder.ItemView.FindViewById<Android.Widget.RelativeLayout>(Resource.Id.RelativeContainer);
+
+                    //if (relativeContainer != null)
+                    //{
+                    //    //Android.Views.ViewGroup.LayoutParams params = relativeContainer.LayoutParameters;
+                    //    //viewHolderWidth = params.Width;
+                    //    //viewHolderHeight = params.Height;
+                    //    Android.Views.ViewGroup.LayoutParams parameter = relativeContainer.LayoutParameters;
+                    //    viewHolderWidth = parameter.Width;
+                    //    viewHolderHeight = parameter.Height;
+                    //}
+
                     int[] screenLoc = new int[2];
 
                     this.ViewHolder.ItemView.GetLocationOnScreen(screenLoc);
+
                     //viewHolder.ItemView.GetLocationOnScreen(screen);
 
                     int viewHolderLocationXGet = screenLoc[0];
@@ -894,29 +922,53 @@ namespace SampleGrouping
 
                     foreach (KeyValuePair<RecyclerView.ViewHolder, Location> dataLocation in this.MyAdapter.ViewHolderLocationDictionary)
                     {
+                        //Android.Widget.RelativeLayout relativeContainerDataLocation = dataLocation.Key.ItemView.FindViewById<Android.Widget.RelativeLayout>(Resource.Id.RelativeContainer);
+
+                        //int dataLocationWidth = 0;
+                        //int dataLocationHeight = 0;
+
+                        //if (relativeContainerDataLocation != null)
+                        //{
+                        //    Android.Views.ViewGroup.LayoutParams parameter = relativeContainerDataLocation.LayoutParameters;
+                        //    dataLocationWidth = parameter.Width;
+                        //    dataLocationHeight = parameter.Height;
+                        //}
+
                         int locationX = dataLocation.Value.locationX;
                         int locationY = dataLocation.Value.locationY;
 
-                        int diffX = Math.Abs(viewHolderLocationToCheck.locationX - locationX);
-                        int diffY = Math.Abs(viewHolderLocationToCheck.locationY - locationY);
+                        int persentageX = Math.Abs(viewHolderLocationToCheck.locationX - locationX);
+                        int persentageY = Math.Abs(viewHolderLocationToCheck.locationY - locationY);
 
-                        if (dataLocation.Key.LayoutPosition != this.ViewHolder.LayoutPosition)
+                        //int persentageWidth = (viewHolderWidth / dataLocationWidth);
+                        //int persentageHeight = (viewHolderHeight / dataLocationHeight);
+
+                         if (dataLocation.Key.LayoutPosition != this.ViewHolder.LayoutPosition)
                         {
-                            if (diffX > 3 && diffY > 3)
+                            if (persentageX > 40 && persentageY > 40)
                             {
                                 List<HomeScreenMenuItem> itemToChangeSizeBack = this.MyAdapter.data.Where(o => o.ItemPositionForEdit == dataLocation.Key.LayoutPosition).ToList();
+                                int updatePrevShowingIndicator = -1;
                                 foreach (var item in itemToChangeSizeBack)
+                                {
+                                    if (item.IsIndicatorGroupingShow)
+                                        updatePrevShowingIndicator = item.ItemPositionForEdit;
                                     item.IsIndicatorGroupingShow = false;
+                                }
+                                if(updatePrevShowingIndicator>-1)
+                                {
+                                    this.Adapter.NotifyItemChanged(updatePrevShowingIndicator);
+                                }
                                 //this.Adapter.NotifyDataSetChanged();
                                 //this.Adapter.NotifyItemChanged(dataLocation.Key.LayoutPosition);
                             }
-                            else if (diffX <= 3 && diffY <= 3)
+                            else if (persentageX <= 40 && persentageY <= 40)
                             {
                                 List<HomeScreenMenuItem> itemToChangeSize = this.MyAdapter.data.Where(o => o.ItemPositionForEdit == dataLocation.Key.LayoutPosition).ToList();
                                 foreach (var item in itemToChangeSize)
                                     item.IsIndicatorGroupingShow = true;
                                 //this.Adapter.NotifyDataSetChanged();
-                                //this.Adapter.NotifyItemChanged(dataLocation.Key.LayoutPosition);
+                                this.Adapter.NotifyItemChanged(dataLocation.Key.LayoutPosition);
                             }
                         }
                     }
