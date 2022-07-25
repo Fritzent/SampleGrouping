@@ -5,9 +5,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:id="@+id/RelativeContainer"
-    android:clipToPadding="false"
-    android:clipChildren="false">
+    android:id="@+id/RelativeContainer">
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent">
@@ -15,15 +13,16 @@
             android:id="@+id/GroupingIndicator"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_margin="5dp"
-            android:background="@android:color/holo_red_dark">
+            android:layout_margin="5dp">
             <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:id="@+id/CardContainer"
                 app:cardElevation="4dp"
                 app:cardCornerRadius="12dp"
-                android:visibility="gone">
+                android:visibility="gone"
+                android:clipToPadding="false"
+                android:clipChildren="false">
                 <FrameLayout
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"

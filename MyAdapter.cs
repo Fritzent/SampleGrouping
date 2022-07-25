@@ -15,44 +15,12 @@ using static SampleGrouping.MyAdapter;
 
 namespace SampleGrouping
 {
-    public class OnDrag : Java.Lang.Object, View.IOnDragListener
-    {
-        public RecyclerView.ViewHolder View;
-        public OnDrag(RecyclerView.ViewHolder v)
-        {
-            this.View = v;
-        }
-
-        bool View.IOnDragListener.OnDrag(View v, DragEvent e)
-        {
-            switch (e.Action)
-            {
-                //case DragAction.Entered
-                case Android.Views.DragAction.Drop:
-                    int[] screen = new int[2];
-
-                    //MyViewHolder holder = new MyViewHolder(v);
-                    MyViewHolder holder = new MyViewHolder(v);
-                    //holder.itemVie
-                    //this.View.ItemView.GetLocationOnScreen
-
-                    holder.ItemView.GetLocationOnScreen(screen);
-
-                    int checkHolderLocX = screen[0];
-                    int checkHolderLocY = screen[1];
-
-                    System.Diagnostics.Debug.Write("Check checkHolderLocX :" + checkHolderLocX);
-                    System.Diagnostics.Debug.Write("Check checkHolderLocY :" + checkHolderLocY);
-
-                    break;
-            }
-            return true;
-        }
-    }
     public class MyOnGlobalListener : Java.Lang.Object, ViewTreeObserver.IOnGlobalLayoutListener
     {
         public MyAdapter MyAdapter;
         public RecyclerView.ViewHolder Holder;
+        public int SavedLastMode = 2;
+        public bool IsDictionaryNeedToRemove = false;
         public MyOnGlobalListener(MyAdapter adapter, RecyclerView.ViewHolder holder)
         {
             this.MyAdapter = adapter;
@@ -69,21 +37,41 @@ namespace SampleGrouping
             Location generateLocation = new Location();
             generateLocation.locationX = locationX;
             generateLocation.locationY = locationY;
+            generateLocation.LayoutPosition = this.Holder.LayoutPosition;
 
-            if (!this.MyAdapter.ViewHolderLocationDictionary.ContainsKey(this.Holder))
-                this.MyAdapter.ViewHolderLocationDictionary.Add(this.Holder, generateLocation);
+            if (this.MyAdapter.isModeChange)
+                this.MyAdapter.ViewHolderLocationDictionary.Clear();
+
+            this.MyAdapter.isModeChange = false;
+
+            //if (!this.MyAdapter.ViewHolderLocationDictionary.ContainsKey(this.Holder))
+            //{
+            //    this.MyAdapter.ViewHolderLocationDictionary.Add(this.Holder, generateLocation);
+            //}
+            //else
+            //{
+            //    this.MyAdapter.ViewHolderLocationDictionary[this.Holder].locationX = locationX;
+            //    this.MyAdapter.ViewHolderLocationDictionary[this.Holder].locationY = locationY;
+            //}
+            
+            if (this.MyAdapter.ViewHolderLocationDictionary.ContainsKey(this.Holder.LayoutPosition))
+            {
+                //ini kalau dia udh ada di dalam dictionary
+                this.MyAdapter.ViewHolderLocationDictionary[this.Holder.LayoutPosition].locationX = locationX;
+                this.MyAdapter.ViewHolderLocationDictionary[this.Holder.LayoutPosition].locationY = locationY;
+            }
             else
             {
-                this.MyAdapter.ViewHolderLocationDictionary[this.Holder].locationX = locationX;
-                this.MyAdapter.ViewHolderLocationDictionary[this.Holder].locationY = locationY;
+                this.MyAdapter.ViewHolderLocationDictionary.Add(this.Holder.LayoutPosition, generateLocation);
             }
+            
         }
     }
     public class MyAdapter : RecyclerView.Adapter, ItemMoveCallback.ItemTouchHelperContract, View.IOnClickListener
     {
         #region Fields
         private Dictionary<Guid, List<HomeScreenMenuItem>> _groupingDictionary;
-        private Dictionary<RecyclerView.ViewHolder, Location> _viewHolderLocationDictionary;
+        private Dictionary<int, Location> _viewHolderLocationDictionary;
         private int _targetPositionToShowIndicatorGrouping;
         private bool _isIndicatorGroupingShowForTarget;
         #endregion
@@ -107,12 +95,12 @@ namespace SampleGrouping
             }
         }
         public List<RecyclerView.ViewHolder> ListViewHolder { get; set; }
-        public Dictionary<RecyclerView.ViewHolder, Location> ViewHolderLocationDictionary
+        public Dictionary<int, Location> ViewHolderLocationDictionary
         {
             get
             {
                 if (_viewHolderLocationDictionary == null)
-                    _viewHolderLocationDictionary = new Dictionary<RecyclerView.ViewHolder, Location>();
+                    _viewHolderLocationDictionary = new Dictionary<int, Location>();
                 return _viewHolderLocationDictionary;
             }
             set
@@ -158,6 +146,7 @@ namespace SampleGrouping
         public List<HomeScreenMenuItem> ItemThatPositionMoveInDeletePage { get; set; }
         public MyOnGlobalListener SavedMyOnGlobalListener { get; set; }
         public bool isPageMovedAfterDeletePage { get; set; }
+        public bool isModeChange { get; set; }
         #endregion
 
         public MyAdapter(List<HomeScreenMenuItem> data, MainActivity mainActivity, HomeScreenMenu homeScreenMenu, RecyclerView recyclerView)
@@ -285,7 +274,7 @@ namespace SampleGrouping
             List<HomeScreenMenuItem> getItemsInPosition = this.data.Where(o => o.ItemPositionForEdit == Position).ToList();
             List<HomeScreenMenuItem> getItemsInPositionFromLastSavedData = this.LastSavedData.Where(o => o.ItemPositionForEdit == Position).ToList();
 
-            if (getItemsInPosition.Count > 0 && getItemsInPositionFromLastSavedData.Count > 0)
+            if (getItemsInPosition.Count > 0)
             {
                 foreach (HomeScreenMenuItem item in getItemsInPosition)
                 {
@@ -300,15 +289,31 @@ namespace SampleGrouping
                     item.HomeScreenMenuItemId = Guid.NewGuid();
                     item.HomeScreenMenuId = this.HomeScreenMenu.homeScreenMenuId;
 
-                    foreach (HomeScreenMenuItem itemInLastSavedData in getItemsInPositionFromLastSavedData)
+                    if (getItemsInPositionFromLastSavedData.Count > 0)
                     {
-                        //itemInLastSavedData.ItemPositionForEdit = item.ItemPositionForEdit;
-                        itemInLastSavedData.ItemPosition = item.ItemPosition;
-                        itemInLastSavedData.ItemName = item.ItemName;
-                        itemInLastSavedData.IsDeleted = item.IsDeleted;
-                        itemInLastSavedData.ItemType = item.ItemType;
-                        itemInLastSavedData.HomeScreenMenuItemId = item.HomeScreenMenuItemId;
-                        itemInLastSavedData.HomeScreenMenuId = item.HomeScreenMenuId;
+                        foreach (HomeScreenMenuItem itemInLastSavedData in getItemsInPositionFromLastSavedData)
+                        {
+                            //itemInLastSavedData.ItemPositionForEdit = item.ItemPositionForEdit;
+                            itemInLastSavedData.ItemPosition = item.ItemPosition;
+                            itemInLastSavedData.ItemName = item.ItemName;
+                            itemInLastSavedData.IsDeleted = item.IsDeleted;
+                            itemInLastSavedData.ItemType = item.ItemType;
+                            itemInLastSavedData.HomeScreenMenuItemId = item.HomeScreenMenuItemId;
+                            itemInLastSavedData.HomeScreenMenuId = item.HomeScreenMenuId;
+                        }
+                    }
+                    else
+                    {
+                        HomeScreenMenuItem generateNewItem = new HomeScreenMenuItem();
+                        generateNewItem.ItemPosition = item.ItemPosition;
+                        generateNewItem.ItemName = item.ItemName;
+                        generateNewItem.IsDeleted = item.IsDeleted;
+                        generateNewItem.ItemType = item.ItemType;
+                        generateNewItem.HomeScreenMenuItemId = item.HomeScreenMenuItemId;
+                        generateNewItem.HomeScreenMenuId = item.HomeScreenMenuId;
+
+                        getItemsInPositionFromLastSavedData.Add(generateNewItem);
+                        this.LastSavedData.Add(generateNewItem);
                     }
                 }
             }
@@ -343,12 +348,18 @@ namespace SampleGrouping
         {
             if (this.LastItemsUpdated != null)
             {
+                var positionItem = 0;
                 foreach (var item in this.LastItemsUpdated)
                 {
+                    positionItem = item.ItemPositionForEdit;
+                    List<HomeScreenMenuItem> itemInSavedData = this.LastSavedData.Where(o => o.ItemPositionForEdit == item.ItemPositionForEdit && o.IsDeleted == true).ToList();
                     List<HomeScreenMenuItem> itemInData = this.data.Where(o => o.ItemPositionForEdit == item.ItemPositionForEdit && o.IsDeleted == false).ToList();
                     item.IsDeleted = false;
+                    var checkGroupingId = item.GroupingId;
                     foreach (var itemToChange in itemInData)
                     {
+                        var checkGroupingId1 = itemToChange.GroupingId;
+                        itemToChange.GroupingId = item.GroupingId;
                         itemToChange.ItemPosition = item.ItemPosition;
                         //itemToChange.ItemPositionForEdit = item.ItemPositionForEdit;
                         itemToChange.IsDeleted = item.IsDeleted;
@@ -358,10 +369,15 @@ namespace SampleGrouping
                         itemToChange.GroupName = item.GroupName;
                         itemToChange.HomeScreenMenuId = item.HomeScreenMenuId;
                         itemToChange.HomeScreenMenuItemId = item.HomeScreenMenuItemId;
+
+                        foreach(var itemToChangeSavedData in itemInSavedData)
+                            itemToChangeSavedData.IsDeleted = item.IsDeleted;
+
                     }
-                    this.NotifyDataSetChanged();
-                    this.NotifyItemChanged(item.ItemPositionForEdit);
                 }
+                this.LoadDataAfterDeleteItem(this.LastPagePositionBeforeInEditMode);
+                this.NotifyDataSetChanged();
+                this.NotifyItemChanged(positionItem);
             }
         }
         public HomeScreenMenu UndoDeletePage(HomeScreenMenu homeScreenMenu)
@@ -706,8 +722,7 @@ namespace SampleGrouping
 
             for (int x = 0; x < dataSource.Count(); x++)
             {
-                //List<HomeScreenMenuItem> findItemInResult = homeScreenItemResult.Where(o => o.Position == x && o.IsDeleted == false).ToList();
-                List<HomeScreenMenuItem> findItemInDataSource = this.data.Where(o => o.ItemPositionForEdit == x).ToList();
+                List<HomeScreenMenuItem> findItemInDataSource = this.data.Where(o => o.ItemPositionForEdit == x && o.IsDeleted == false).ToList();
 
                 if (findItemInDataSource.Count() > 0)
                 {
@@ -717,20 +732,13 @@ namespace SampleGrouping
                         {
                             if (!string.IsNullOrEmpty(item.GroupName))
                             {
-                                //List<HomeScreenMenuItem> getGroupItem = homeScreenItemResult.Where(o => o.Position == item.Position).ToList();
                                 List<HomeScreenMenuItem> getGroupItemInDataSource = dataSource.Where(o => o.ItemPositionForEdit == item.ItemPositionForEdit).ToList();
 
                                 foreach (var eachItem in getGroupItemInDataSource)
                                 {
                                     if (!this.GroupDictionary.ContainsKey(eachItem.GroupingId))
                                         this.GroupDictionary.Add(eachItem.GroupingId, getGroupItemInDataSource);
-                                    if (this.GroupDictionary.ContainsKey(eachItem.GroupingId))
-                                    {
-                                        if (!this.GroupDictionary[eachItem.GroupingId].Contains(eachItem))
-                                            this.GroupDictionary[eachItem.GroupingId].Add(eachItem);
-                                    }
                                 }
-
                                 var LastItemInThisGroup = getGroupItemInDataSource.Last();
 
                                 if (item.HomeScreenMenuItemId == LastItemInThisGroup.HomeScreenMenuItemId)
@@ -1108,7 +1116,6 @@ namespace SampleGrouping
                     }
                     else
                     {
-                        //kosingin dulu aja
                     }
                 }
             }
@@ -1433,7 +1440,7 @@ namespace SampleGrouping
                 var getLayoutManager = this.RecyclerView.GetLayoutManager();
                 RelativeLayout RelativeContainerToCustome = holder.ItemView.FindViewById<RelativeLayout>(Resource.Id.RelativeContainer);
 
-                width = (fragmentWidth) / 3;
+                width = ((fragmentWidth) / 3);
 
                 if (h.RelativeContainer != null)
                 {
@@ -1457,6 +1464,8 @@ namespace SampleGrouping
                     RelativeLayout GroupingIndicator = h.GroupingIndicator as RelativeLayout;
                     if (GroupingIndicator != null)
                         GroupingIndicator.SetPadding(8, 8, 8, 8);
+
+                    GroupingIndicator.SetBackgroundColor(Android.Graphics.Color.Red);
                 }
             }
             if (!itemProduct.IsIndicatorGroupingShow && this.isModeEditNow)
@@ -1466,6 +1475,7 @@ namespace SampleGrouping
                     RelativeLayout GroupingIndicator = h.GroupingIndicator as RelativeLayout;
                     if (GroupingIndicator != null)
                         GroupingIndicator.SetPadding(0, 0, 0, 0);
+                    GroupingIndicator.SetBackgroundColor(Android.Graphics.Color.White);
                 }
             }
         }
@@ -1485,12 +1495,6 @@ namespace SampleGrouping
         {
             View v = LayoutInflater.From(parent.Context).Inflate(Resource.Layout.item_layout, parent, false);
             MyViewHolder holder = new MyViewHolder(v);
-
-            //v.SetOnDragListener(new OnDrag(holder));
-
-            //OnTouchEvent touchHelper = new OnTouchEvent(this.RecyclerView, this.MainActivity, this);
-            //holder.ItemView.SetOnTouchListener(touchHelper);
-            //this.RecyclerView.SetOnTouchListener(touchHelper);
 
             holder.ItemView.ViewTreeObserver.AddOnGlobalLayoutListener(new MyOnGlobalListener(this, holder));
             SavedMyOnGlobalListener = new MyOnGlobalListener(this, holder);
@@ -1888,10 +1892,15 @@ namespace SampleGrouping
         {
             get { return data.Count(); }
         }
-        /*
-         * Our Viewholder class.
-         * Will hold our textview.
-         */
+        //detach in adapter
+        public override void OnViewDetachedFromWindow(Java.Lang.Object holder)
+        {
+            base.OnViewDetachedFromWindow(holder);
+            //holder.ItemView.ViewTreeObserver.AddOnGlobalLayoutListener(new MyOnGlobalListener(this, holder));
+            //SavedMyOnGlobalListener = new MyOnGlobalListener(this, holder);
+            RecyclerView.ViewHolder viewHolder = holder as RecyclerView.ViewHolder;
+            viewHolder.ItemView.ViewTreeObserver.RemoveOnGlobalLayoutListener(this.SavedMyOnGlobalListener);
+        }
         internal class MyViewHolder : RecyclerView.ViewHolder
         {
             public ViewGroup NonGroupItemSection;

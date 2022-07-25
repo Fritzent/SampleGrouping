@@ -360,11 +360,11 @@ namespace SampleGrouping.CustomeView
                     padding = 0;
 
                 if (position == 0)
-                    padding = dpToPx(2);
+                    padding = dpToPx(0);
                 else
                 {
                     //padding = 8;
-                    padding = dpToPx(7);
+                    padding = dpToPx(0);
                 }
 
                 return (mIsRTL)
@@ -401,7 +401,7 @@ namespace SampleGrouping.CustomeView
                         {
                             View firstView = layoutManager.FindViewByPosition(firstVisiblePos);
                             //int rowCount = 3;
-                            int rowCount = 4;
+                            int rowCount = 3;
 
                             outs[0] = this.SnapToBlock.mOrientationHelper.GetDecoratedStart(firstView)
                             - (((firstVisiblePos - targetPos) / rowCount) * this.SnapToBlock.mItemDimension);
