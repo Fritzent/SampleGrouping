@@ -44,34 +44,34 @@ namespace SampleGrouping
 
             this.MyAdapter.isModeChange = false;
 
-            //if (!this.MyAdapter.ViewHolderLocationDictionary.ContainsKey(this.Holder))
-            //{
-            //    this.MyAdapter.ViewHolderLocationDictionary.Add(this.Holder, generateLocation);
-            //}
-            //else
-            //{
-            //    this.MyAdapter.ViewHolderLocationDictionary[this.Holder].locationX = locationX;
-            //    this.MyAdapter.ViewHolderLocationDictionary[this.Holder].locationY = locationY;
-            //}
-            
-            if (this.MyAdapter.ViewHolderLocationDictionary.ContainsKey(this.Holder.LayoutPosition))
+            if (!this.MyAdapter.ViewHolderLocationDictionary.ContainsKey(this.Holder))
             {
-                //ini kalau dia udh ada di dalam dictionary
-                this.MyAdapter.ViewHolderLocationDictionary[this.Holder.LayoutPosition].locationX = locationX;
-                this.MyAdapter.ViewHolderLocationDictionary[this.Holder.LayoutPosition].locationY = locationY;
+                this.MyAdapter.ViewHolderLocationDictionary.Add(this.Holder, generateLocation);
             }
             else
             {
-                this.MyAdapter.ViewHolderLocationDictionary.Add(this.Holder.LayoutPosition, generateLocation);
+                this.MyAdapter.ViewHolderLocationDictionary[this.Holder].locationX = locationX;
+                this.MyAdapter.ViewHolderLocationDictionary[this.Holder].locationY = locationY;
             }
-            
+
+            //if (this.MyAdapter.ViewHolderLocationDictionary.ContainsKey(this.Holder.LayoutPosition))
+            //{
+            //    //ini kalau dia udh ada di dalam dictionary
+            //    this.MyAdapter.ViewHolderLocationDictionary[this.Holder.LayoutPosition].locationX = locationX;
+            //    this.MyAdapter.ViewHolderLocationDictionary[this.Holder.LayoutPosition].locationY = locationY;
+            //}
+            //else
+            //{
+            //    this.MyAdapter.ViewHolderLocationDictionary.Add(this.Holder.LayoutPosition, generateLocation);
+            //}
+
         }
     }
     public class MyAdapter : RecyclerView.Adapter, ItemMoveCallback.ItemTouchHelperContract, View.IOnClickListener
     {
         #region Fields
         private Dictionary<Guid, List<HomeScreenMenuItem>> _groupingDictionary;
-        private Dictionary<int, Location> _viewHolderLocationDictionary;
+        private Dictionary<RecyclerView.ViewHolder, Location> _viewHolderLocationDictionary;
         private int _targetPositionToShowIndicatorGrouping;
         private bool _isIndicatorGroupingShowForTarget;
         #endregion
@@ -95,12 +95,12 @@ namespace SampleGrouping
             }
         }
         public List<RecyclerView.ViewHolder> ListViewHolder { get; set; }
-        public Dictionary<int, Location> ViewHolderLocationDictionary
+        public Dictionary<RecyclerView.ViewHolder, Location> ViewHolderLocationDictionary
         {
             get
             {
                 if (_viewHolderLocationDictionary == null)
-                    _viewHolderLocationDictionary = new Dictionary<int, Location>();
+                    _viewHolderLocationDictionary = new Dictionary<RecyclerView.ViewHolder, Location>();
                 return _viewHolderLocationDictionary;
             }
             set
@@ -272,7 +272,7 @@ namespace SampleGrouping
         public void AddItems(int Position)
         {
             List<HomeScreenMenuItem> getItemsInPosition = this.data.Where(o => o.ItemPositionForEdit == Position).ToList();
-            List<HomeScreenMenuItem> getItemsInPositionFromLastSavedData = this.LastSavedData.Where(o => o.ItemPositionForEdit == Position).ToList();
+            List<HomeScreenMenuItem> getItemsInPositionFromLastSavedData = this.LastSavedData.Where(o => o.ItemPositionForEdit == Position && o.IsDeleted == false).ToList();
 
             if (getItemsInPosition.Count > 0)
             {
@@ -722,7 +722,15 @@ namespace SampleGrouping
 
             for (int x = 0; x < dataSource.Count(); x++)
             {
-                List<HomeScreenMenuItem> findItemInDataSource = this.data.Where(o => o.ItemPositionForEdit == x && o.IsDeleted == false).ToList();
+                var checkPage = 1;
+
+                if (this.LastPagePositionBeforeInEditMode > 1)
+                    checkPage = this.LastPagePositionBeforeInEditMode;
+
+                var customeXForPositionInEachPage = ((12 * (checkPage - 1)) + x);
+
+                List<HomeScreenMenuItem> findItemInDataSource = this.data.Where(o => o.ItemPositionForEdit == customeXForPositionInEachPage && o.IsDeleted == false).ToList();
+                List<HomeScreenMenuItem> findItemInLastSavedData = this.LastSavedData.Where(o => o.ItemPositionForEdit == customeXForPositionInEachPage && o.IsDeleted == false).ToList();
 
                 if (findItemInDataSource.Count() > 0)
                 {
@@ -738,6 +746,14 @@ namespace SampleGrouping
                                 {
                                     if (!this.GroupDictionary.ContainsKey(eachItem.GroupingId))
                                         this.GroupDictionary.Add(eachItem.GroupingId, getGroupItemInDataSource);
+                                    else
+                                    {
+                                        if (this.GroupDictionary.ContainsKey(eachItem.GroupingId))
+                                        {
+                                            if (!this.GroupDictionary[eachItem.GroupingId].Contains(eachItem))
+                                                this.GroupDictionary[eachItem.GroupingId].Add(eachItem);
+                                        }
+                                    }
                                 }
                                 var LastItemInThisGroup = getGroupItemInDataSource.Last();
 
@@ -784,7 +800,7 @@ namespace SampleGrouping
                     //emptyItem.ItemPositionForEdit = x;
                     var column = 3;
                     var row = 4;
-                    var countItemPosition = ((x / 12) * 12) + ((x % column) * row) + ((x % 12) / column);
+                    var countItemPosition = ((customeXForPositionInEachPage / 12) * 12) + ((customeXForPositionInEachPage % column) * row) + ((customeXForPositionInEachPage % 12) / column);
                     emptyItem.ItemPosition = countItemPosition;
                     //emptyItem.ItemName = "New Item" + i;
                     emptyItem.HomeScreenMenuItemId = Guid.NewGuid();
@@ -796,6 +812,7 @@ namespace SampleGrouping
             }
             this.data = newDataGenerated;
             this.NotifyDataSetChanged();
+            //this.NotifyItemRangeChanged(0, this.ItemCount);
 
             return true;
         }
@@ -908,6 +925,9 @@ namespace SampleGrouping
                 var checkPageSize = homeScreenMenu.pageSize;
 
                 List<HomeScreenMenuItem> itemGenerated = new List<HomeScreenMenuItem>();
+
+                if (this.ViewHolderLocationDictionary.Count > 0)
+                    this.ViewHolderLocationDictionary.Clear();
 
                 if (mode == "next")
                 {
@@ -1131,7 +1151,8 @@ namespace SampleGrouping
         {
             MyViewHolder h = holder as MyViewHolder;
 
-            HomeScreenMenuItem itemProduct = data[position] as HomeScreenMenuItem;
+            //HomeScreenMenuItem itemProduct = data[position] as HomeScreenMenuItem;
+            HomeScreenMenuItem itemProduct = this.data.ElementAt(position);
 
             if (h != null)
             {
@@ -1496,8 +1517,16 @@ namespace SampleGrouping
             View v = LayoutInflater.From(parent.Context).Inflate(Resource.Layout.item_layout, parent, false);
             MyViewHolder holder = new MyViewHolder(v);
 
-            holder.ItemView.ViewTreeObserver.AddOnGlobalLayoutListener(new MyOnGlobalListener(this, holder));
-            SavedMyOnGlobalListener = new MyOnGlobalListener(this, holder);
+            if (this.isModeEditNow)
+            {
+                holder.ItemView.ViewTreeObserver.AddOnGlobalLayoutListener(new MyOnGlobalListener(this, holder));
+                SavedMyOnGlobalListener = new MyOnGlobalListener(this, holder);
+            }
+            else
+            {
+                if (this.ViewHolderLocationDictionary.Count > 0)
+                    this.ViewHolderLocationDictionary.Clear();
+            }
 
             ViewGroup NonGroupItemSection = holder.ItemView.FindViewById(Resource.Id.NonGroupItem) as ViewGroup;
             TextView NonGroupItemName = holder.ItemView.FindViewById(Resource.Id.ItemName) as TextView;
@@ -1843,11 +1872,13 @@ namespace SampleGrouping
             //var getFirstItemTo = this.Items.FirstOrDefault(o => o.Position == To);
             //var getItemTo = this.Items.Where(o => o.Position == To);
             var getItemFrom = this.data.FirstOrDefault(o => o.ItemPositionForEdit == fromPosition);
+            var getItemInLastSavedData = this.LastSavedData.FirstOrDefault(o => o.ItemPositionForEdit == fromPosition);
             var getFirstItemTo = this.data.FirstOrDefault(o => o.ItemPositionForEdit == toPosition);
             var getItemTo = this.data.Where(o => o.ItemPositionForEdit == toPosition);
+            var getItemToInLastSavedData = this.LastSavedData.Where(o => o.ItemPositionForEdit == toPosition);
             string GroupName = "Grouping";
 
-            if (getItemFrom != null && getFirstItemTo != null && getItemTo != null)
+            if (getItemFrom != null && getFirstItemTo != null && getItemTo != null && getItemInLastSavedData != null && getItemToInLastSavedData != null)
             {
                 if (!string.IsNullOrEmpty(getItemFrom.ItemType) && string.IsNullOrEmpty(getItemFrom.GroupName))
                 {
@@ -1860,15 +1891,23 @@ namespace SampleGrouping
                         //(pageCount * 12) + ((posUser % column) * row) + ((Position % 12) / column);
                         //var calculateItemPosition = ((toPosition / 12) * 12) + ((toPosition % column) / row) + ((toPosition % 12) * column);
                         getItemFrom.ItemPosition = getFirstItemTo.ItemPosition;
+                        getItemInLastSavedData.ItemPosition = getFirstItemTo.ItemPosition;
 
                         if (getFirstItemTo.GroupingId != Guid.Empty)
                             generateGuid = getFirstItemTo.GroupingId;
 
                         getItemFrom.GroupingId = generateGuid;
+                        getItemInLastSavedData.GroupingId = generateGuid;
                         if (getFirstItemTo.GroupName != "" || !string.IsNullOrEmpty(getFirstItemTo.GroupName))
+                        {
                             getItemFrom.GroupName = getFirstItemTo.GroupName;
+                            getItemInLastSavedData.GroupName = getFirstItemTo.GroupName;
+                        }
                         else
+                        {
                             getItemFrom.GroupName = GroupName;
+                            getItemInLastSavedData.GroupName = GroupName;
+                        }
 
                         foreach (var itemTo in getItemTo)
                         {
@@ -1878,11 +1917,19 @@ namespace SampleGrouping
                                 itemTo.GroupingId = generateGuid;
                             }
                         }
+                        foreach (var itemToLastSavedData in getItemToInLastSavedData)
+                        {
+                            if (string.IsNullOrEmpty(itemToLastSavedData.GroupName))
+                            {
+                                itemToLastSavedData.GroupName = GroupName;
+                                itemToLastSavedData.GroupingId = generateGuid;
+                            }
+                        }
                     }
                 }
             }
 
-            this.NotifyDataSetChanged();
+            //this.NotifyDataSetChanged();
         }
         public List<HomeScreenMenuItem> getDataAdapter()
         {
