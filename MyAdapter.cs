@@ -1154,6 +1154,12 @@ namespace SampleGrouping
             //HomeScreenMenuItem itemProduct = data[position] as HomeScreenMenuItem;
             HomeScreenMenuItem itemProduct = this.data.ElementAt(position);
 
+            if (this.isModeEditNow)
+            {
+                var customizePosition = ((12 * (this.LastPagePositionBeforeInEditMode - 1)) + position);
+                itemProduct = this.data.FirstOrDefault(o => o.ItemPositionForEdit == customizePosition && o.IsDeleted == false);
+            }
+
             if (h != null)
             {
 
@@ -1478,27 +1484,39 @@ namespace SampleGrouping
                     h.CardContainer.Visibility = ViewStates.Visible;
                 }
             }
-            if (itemProduct.IsIndicatorGroupingShow && this.isModeEditNow)
-            {
-                if (h.GroupingIndicator != null)
-                {
-                    RelativeLayout GroupingIndicator = h.GroupingIndicator as RelativeLayout;
-                    if (GroupingIndicator != null)
-                        GroupingIndicator.SetPadding(8, 8, 8, 8);
 
-                    GroupingIndicator.SetBackgroundColor(Android.Graphics.Color.Red);
-                }
-            }
-            if (!itemProduct.IsIndicatorGroupingShow && this.isModeEditNow)
+            if ( this.isModeEditNow)
             {
-                if (h.GroupingIndicator != null)
+                if (itemProduct.IsIndicatorGroupingShow && !string.IsNullOrEmpty(itemProduct.ItemType))
                 {
-                    RelativeLayout GroupingIndicator = h.GroupingIndicator as RelativeLayout;
-                    if (GroupingIndicator != null)
-                        GroupingIndicator.SetPadding(0, 0, 0, 0);
-                    GroupingIndicator.SetBackgroundColor(Android.Graphics.Color.White);
+                    if (h.GroupingIndicator != null)
+                    {
+                        RelativeLayout GroupingIndicator = h.GroupingIndicator as RelativeLayout;
+                        if (GroupingIndicator != null)
+                            GroupingIndicator.SetPadding(8, 8, 8, 8);
+
+                        GroupingIndicator.SetBackgroundColor(Android.Graphics.Color.Red);
+                    }
+                }
+                else
+                {
+                    if (h.GroupingIndicator != null)
+                    {
+                        RelativeLayout GroupingIndicator = h.GroupingIndicator as RelativeLayout;
+                        if (GroupingIndicator != null)
+                            GroupingIndicator.SetPadding(0, 0, 0, 0);
+                        GroupingIndicator.SetBackgroundColor(Android.Graphics.Color.White);
+                    }
                 }
             }
+            //if (itemProduct.IsIndicatorGroupingShow && this.isModeEditNow && !string.IsNullOrEmpty(itemProduct.ItemType))
+            //{
+                
+            //}
+            //if (!itemProduct.IsIndicatorGroupingShow && this.isModeEditNow)
+            //{
+                
+            //}
         }
         public void OnClick(View v)
         {
@@ -1602,7 +1620,6 @@ namespace SampleGrouping
         {
             List<HomeScreenMenuItem> itemFromPosition = this.data.Where(o => o.ItemPositionForEdit == fromPosition && o.IsDeleted == false).ToList();
             List<HomeScreenMenuItem> itemToPosition = this.data.Where(o => o.ItemPositionForEdit == toPosition && o.IsDeleted == false).ToList();
-
 
             //5 - 1
             if (fromPosition < toPosition)
@@ -1865,6 +1882,7 @@ namespace SampleGrouping
                     }
                 }
             }
+            
         }
         public void OnGrouping(int fromPosition, int toPosition)
         {
@@ -1929,7 +1947,7 @@ namespace SampleGrouping
                 }
             }
 
-            //this.NotifyDataSetChanged();
+            this.NotifyDataSetChanged();
         }
         public List<HomeScreenMenuItem> getDataAdapter()
         {

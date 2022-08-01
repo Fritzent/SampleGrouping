@@ -627,8 +627,14 @@ namespace SampleGrouping
 
                     var checkDataHolder = this.MyAdapter.data.FirstOrDefault(o => o.ItemPositionForEdit == this.ViewHolder.LayoutPosition);
 
+                    //if (this.MyAdapter.isModeEditNow)
+                    //    checkDataHolder = this.MyAdapter.data.ElementAtOrDefault(this.ViewHolder.LayoutPosition);
+
                     if (this.MyAdapter.isModeEditNow)
-                        checkDataHolder = this.MyAdapter.data.ElementAtOrDefault(this.ViewHolder.LayoutPosition);
+                    {
+                        var customizePosition = ((12 * (this.MyAdapter.LastPagePositionBeforeInEditMode - 1)) + this.ViewHolder.LayoutPosition);
+                        checkDataHolder = this.MyAdapter.data.FirstOrDefault(o => o.ItemPositionForEdit == customizePosition && o.IsDeleted == false);
+                    }
 
                     if (string.IsNullOrEmpty(checkDataHolder.GroupName) || checkDataHolder.GroupingId == Guid.Empty)
                     {
@@ -752,9 +758,13 @@ namespace SampleGrouping
                     var checkDataHolder = this.MyAdapter.data.FirstOrDefault(o => o.ItemPositionForEdit == this.ViewHolder.LayoutPosition);
 
                     if (this.MyAdapter.isModeEditNow)
-                        checkDataHolder = this.MyAdapter.data.ElementAtOrDefault(this.ViewHolder.LayoutPosition);
+                    {
+                        var customizePosition = ((12 * (this.MyAdapter.LastPagePositionBeforeInEditMode - 1)) + this.ViewHolder.LayoutPosition);
+                        checkDataHolder = this.MyAdapter.data.FirstOrDefault(o => o.ItemPositionForEdit == customizePosition && o.IsDeleted == false);
+                    }
+                        //checkDataHolder = this.MyAdapter.data.ElementAtOrDefault(this.ViewHolder.LayoutPosition);
 
-                    if (string.IsNullOrEmpty(checkDataHolder.GroupName) || checkDataHolder.GroupingId == Guid.Empty)
+                    if (string.IsNullOrEmpty(checkDataHolder.GroupName) && checkDataHolder.GroupingId == Guid.Empty)
                     {
                         int[] screenLoc = new int[2];
 
@@ -837,8 +847,16 @@ namespace SampleGrouping
                                 else if (persentageX <= 100 && persentageY <= 100)
                                 {
                                     List<HomeScreenMenuItem> itemToChangeSize = this.MyAdapter.data.Where(o => o.ItemPositionForEdit == findLayoutPositionForDataLocation).ToList();
+                                    //foreach (var item in itemToChangeSize)
+                                    //    item.IsIndicatorGroupingShow = true;
+
                                     foreach (var item in itemToChangeSize)
-                                        item.IsIndicatorGroupingShow = true;
+                                    {
+                                        if (checkDataHolder.GroupingId == Guid.Empty || string.IsNullOrEmpty(checkDataHolder.GroupName))
+                                        {
+                                            item.IsIndicatorGroupingShow = true;
+                                        }
+                                    }
 
                                     //this.Adapter.NotifyDataSetChanged();
                                     //this.Adapter.NotifyItemChanged(dataLocation.Key.LayoutPosition);
