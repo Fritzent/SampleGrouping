@@ -355,6 +355,8 @@ namespace SampleGrouping
         {
             this.PinContainer.RemoveAllViewsInLayout();
             double itemCount = (Convert.ToDouble(mAdapter.data.Count) / 12);
+            //if (this.mAdapter.isModeEditNow)
+            //    itemCount = (Convert.ToDouble(mAdapter.LastSavedData.Count) / 12);
             double pageIndicatorValue = Math.Ceiling(itemCount);
 
             for (int i = 1; i <= pageIndicatorValue; i++)
@@ -493,6 +495,16 @@ namespace SampleGrouping
                     }
 
                     var z = child;
+
+                    if (this.MainActivity.mAdapter.isModeEditNow)
+                    {
+                        var checkPage = 1;
+                        if (this.MainActivity.mAdapter.LastPagePositionBeforeInEditMode > 1)
+                            checkPage = this.MainActivity.mAdapter.LastPagePositionBeforeInEditMode;
+
+                        z = ((12 * (checkPage - 1)) + child);
+                    }
+
                     double convertZ = (Convert.ToDouble(z));
                     double hasilBagi = (convertZ + 1) / 12;
                     int ceilingHasil = (Convert.ToInt32(Math.Ceiling(hasilBagi)));
