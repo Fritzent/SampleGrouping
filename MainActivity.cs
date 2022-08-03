@@ -75,6 +75,7 @@ namespace SampleGrouping
         public Android.Widget.LinearLayout BtnPageNext;
         public Android.Widget.FrameLayout AddPageSection;
         public Android.Widget.ImageView ImageAddPage;
+        public bool IsItemInRecyclerViewDragging;
         public bool IgnoreScrollStateChanged { get; set; }
 
         public RecyclerView.ViewHolder ViewHolderInDragging { get; set; }
@@ -180,7 +181,11 @@ namespace SampleGrouping
             this.DataMenu = menu;
             return true;
         }
-
+        public void ShowHideDeletePage(bool IsDeletePageShow)
+        {
+            var findAddItemMenu = this.DataMenu.FindItem(Resource.Id.delete_page);
+            findAddItemMenu.SetVisible(IsDeletePageShow);
+        }
         public override bool OnOptionsItemSelected(IMenuItem item)
         {
             int id = item.ItemId;
@@ -199,8 +204,17 @@ namespace SampleGrouping
 
                 this.HandlePageIndicator(checkPositionPage);
 
-                var findAddItemMenu = this.DataMenu.FindItem(Resource.Id.delete_page);
-                findAddItemMenu.SetVisible(true);
+                var checkPageSize = (this.mAdapter.ItemCount / 12);
+                if (checkPageSize > 1)
+                {
+                    var findAddItemMenu = this.DataMenu.FindItem(Resource.Id.delete_page);
+                    findAddItemMenu.SetVisible(true);
+                }
+                else
+                {
+                    var findAddItemMenu = this.DataMenu.FindItem(Resource.Id.delete_page);
+                    findAddItemMenu.SetVisible(false);
+                }
 
                 ItemTouchHelper.Callback callback = new ItemMoveCallback(mAdapter, recyclerView, this, mAdapter);
                 this._mItemTouchHelper = new ItemTouchHelper(callback);
@@ -529,7 +543,15 @@ namespace SampleGrouping
             var data = this.MyAdapter.data.FirstOrDefault(o => o.ItemPositionForEdit == p1.LayoutPosition);
 
             if (this.MyAdapter.isModeEditNow)
-                data = this.MyAdapter.data.ElementAt(p1.LayoutPosition);
+            {
+                var checkPage = 1;
+                if (this.MyAdapter.LastPagePositionBeforeInEditMode > 1)
+                    checkPage = this.MyAdapter.LastPagePositionBeforeInEditMode;
+
+                var findLayoutPosition = ((12 * (checkPage - 1)) + p1.LayoutPosition);
+
+                data = this.MyAdapter.data.FirstOrDefault(o => o.ItemPositionForEdit == findLayoutPosition);
+            }
 
             if (!string.IsNullOrEmpty(data.ItemType))
             {
@@ -619,6 +641,7 @@ namespace SampleGrouping
                 case ItemTouchHelper.ActionStateDrag:
                     this.ViewHolder = viewHolder;
                     this.MainActivity.ViewHolderInDragging = viewHolder;
+                    this.MainActivity.IsItemInRecyclerViewDragging = true;
                     break;
                 case ItemTouchHelper.ActionStateIdle:
 
@@ -626,9 +649,6 @@ namespace SampleGrouping
                     this.ViewHolder.ItemView.GetLocationOnScreen(screen);
 
                     var checkDataHolder = this.MyAdapter.data.FirstOrDefault(o => o.ItemPositionForEdit == this.ViewHolder.LayoutPosition);
-
-                    //if (this.MyAdapter.isModeEditNow)
-                    //    checkDataHolder = this.MyAdapter.data.ElementAtOrDefault(this.ViewHolder.LayoutPosition);
 
                     if (this.MyAdapter.isModeEditNow)
                     {
@@ -644,6 +664,19 @@ namespace SampleGrouping
                         Location viewHolderLocation = new Location();
                         viewHolderLocation.locationX = viewHolderLocationX;
                         viewHolderLocation.locationY = viewHolderLocationY;
+
+                        var findLayoutPositionInDictionary = this.MyAdapter.ViewHolderLocationDictionary.Where(o => o.Key.LayoutPosition == this.ViewHolder.LayoutPosition).ToList();
+
+                        //bool isItemMove = true;
+
+                        //foreach (var item in findLayoutPositionInDictionary)
+                        //{
+                        //    int checkX = Math.Abs(viewHolderLocation.locationX - item.Value.locationX);
+                        //    int checkY = Math.Abs(viewHolderLocation.locationY - item.Value.locationY);
+
+                        //    if (checkX < 5 && checkY < 5)
+                        //        isItemMove = false;
+                        //}
 
                         foreach (KeyValuePair<RecyclerView.ViewHolder, Location> dataLocation in this.MyAdapter.ViewHolderLocationDictionary)
                         {
@@ -673,7 +706,6 @@ namespace SampleGrouping
 
                             //    }
                             //}
-
                             if (dataLocation.Key.LayoutPosition != this.ViewHolder.LayoutPosition)
                             {
                                 var checkPage = 1;
@@ -683,7 +715,7 @@ namespace SampleGrouping
                                 var findFromPositionLayoutPositionInData = ((12 * (checkPage - 1)) + this.ViewHolder.LayoutPosition);
                                 var findToPositionLayoutPositionInData = ((12 * (checkPage - 1) + dataLocation.Key.LayoutPosition));
 
-                                if (diffX <= 100 && diffY <= 100)
+                                if (diffX <= 100 && diffY <= 100 && diffX > 20 && diffY > 20)
                                 {
                                     mAdapter.OnGrouping(findFromPositionLayoutPositionInData, findToPositionLayoutPositionInData);
                                     //this.Adapter.NotifyItemChanged(this.ViewHolder.LayoutPosition);
@@ -701,6 +733,7 @@ namespace SampleGrouping
 
                         mAdapter.LoadDataAfterGrouping();
                     }
+                    this.MainActivity.IsItemInRecyclerViewDragging = false;
                     //this.dataFrom = -1;
                     break;
             }
@@ -742,130 +775,149 @@ namespace SampleGrouping
             switch (e.Action)
             {
                 case MotionEventActions.Move:
-                    System.Diagnostics.Debug.Write("ActionStateDrag get Call");
-
-                    RecyclerView.ViewHolder holder = this.MainActivity.ViewHolderInDragging;
-                    if (holder==null)
-                        return false;
-
-                    var checkPostion = holder.LayoutPosition;
-                    var checkAdapterPosition = holder.AdapterPosition;
-
-                    System.Diagnostics.Debug.Write("CheckPositionLayout :" + checkPostion + "CheckAdapterPosition :" + checkAdapterPosition);
-
-                    this.ViewHolder = holder;
-
-                    var checkDataHolder = this.MyAdapter.data.FirstOrDefault(o => o.ItemPositionForEdit == this.ViewHolder.LayoutPosition);
-
-                    if (this.MyAdapter.isModeEditNow)
+                    if (this.MainActivity.IsItemInRecyclerViewDragging)
                     {
-                        var customizePosition = ((12 * (this.MyAdapter.LastPagePositionBeforeInEditMode - 1)) + this.ViewHolder.LayoutPosition);
-                        checkDataHolder = this.MyAdapter.data.FirstOrDefault(o => o.ItemPositionForEdit == customizePosition && o.IsDeleted == false);
-                    }
+                        System.Diagnostics.Debug.Write("ActionStateDrag get Call");
+
+                        RecyclerView.ViewHolder holder = this.MainActivity.ViewHolderInDragging;
+                        if (holder == null)
+                            return false;
+
+                        var checkPostion = holder.LayoutPosition;
+                        var checkAdapterPosition = holder.AdapterPosition;
+
+                        System.Diagnostics.Debug.Write("CheckPositionLayout :" + checkPostion + "CheckAdapterPosition :" + checkAdapterPosition);
+
+                        this.ViewHolder = holder;
+
+                        var checkDataHolder = this.MyAdapter.data.FirstOrDefault(o => o.ItemPositionForEdit == this.ViewHolder.LayoutPosition);
+
+                        if (this.MyAdapter.isModeEditNow)
+                        {
+                            var customizePosition = ((12 * (this.MyAdapter.LastPagePositionBeforeInEditMode - 1)) + this.ViewHolder.LayoutPosition);
+                            checkDataHolder = this.MyAdapter.data.FirstOrDefault(o => o.ItemPositionForEdit == customizePosition && o.IsDeleted == false);
+                        }
                         //checkDataHolder = this.MyAdapter.data.ElementAtOrDefault(this.ViewHolder.LayoutPosition);
 
-                    if (string.IsNullOrEmpty(checkDataHolder.GroupName) && checkDataHolder.GroupingId == Guid.Empty)
-                    {
-                        int[] screenLoc = new int[2];
-
-                        this.ViewHolder.ItemView.GetLocationOnScreen(screenLoc);
-
-                        int viewHolderLocationXGet = screenLoc[0];
-                        int viewHolderLocationYGet = screenLoc[1];
-
-                        Location viewHolderLocationToCheck = new Location();
-                        viewHolderLocationToCheck.locationX = viewHolderLocationXGet;
-                        viewHolderLocationToCheck.locationY = viewHolderLocationYGet;
-
-                        foreach (KeyValuePair<RecyclerView.ViewHolder, Location> dataLocation in this.MyAdapter.ViewHolderLocationDictionary)
+                        if (string.IsNullOrEmpty(checkDataHolder.GroupName) && checkDataHolder.GroupingId == Guid.Empty)
                         {
-                            int locationX = dataLocation.Value.locationX;
-                            int locationY = dataLocation.Value.locationY;
+                            int[] screenLoc = new int[2];
 
-                            int persentageX = Math.Abs(viewHolderLocationToCheck.locationX - locationX);
-                            int persentageY = Math.Abs(viewHolderLocationToCheck.locationY - locationY);
+                            this.ViewHolder.ItemView.GetLocationOnScreen(screenLoc);
 
-                            //var checkPage = 1;
-                            //if (this.MyAdapter.LastPagePositionBeforeInEditMode > 1)
-                            //    checkPage = this.MyAdapter.LastPagePositionBeforeInEditMode;
+                            int viewHolderLocationXGet = screenLoc[0];
+                            int viewHolderLocationYGet = screenLoc[1];
 
-                            //var customeLayoutPosition = ((12 * (checkPage - 1)) + this.ViewHolder.LayoutPosition);
+                            Location viewHolderLocationToCheck = new Location();
+                            viewHolderLocationToCheck.locationX = viewHolderLocationXGet;
+                            viewHolderLocationToCheck.locationY = viewHolderLocationYGet;
 
-                            //if (dataLocation.Key != customeLayoutPosition)
-                            //{
-                            //    if (persentageX > 100 || persentageY > 100)
-                            //    {
-                            //        List<HomeScreenMenuItem> itemToChangeSizeBack = this.MyAdapter.data.Where(o => o.ItemPositionForEdit == dataLocation.Key).ToList();
-                            //        int updatePrevShowingIndicator = -1;
-                            //        foreach (var item in itemToChangeSizeBack)
-                            //        {
-                            //            if (item.IsIndicatorGroupingShow)
-                            //                updatePrevShowingIndicator = item.ItemPositionForEdit;
-                            //            item.IsIndicatorGroupingShow = false;
-                            //        }
-                            //        if (updatePrevShowingIndicator > -1)
-                            //        {
-                            //            this.Adapter.NotifyItemChanged(updatePrevShowingIndicator);
-                            //        }
-                            //    }
-                            //    else if (persentageX <= 100 && persentageY <= 100)
-                            //    {
-                            //        List<HomeScreenMenuItem> itemToChangeSize = this.MyAdapter.data.Where(o => o.ItemPositionForEdit == dataLocation.Key).ToList();
-                            //        foreach (var item in itemToChangeSize)
-                            //            item.IsIndicatorGroupingShow = true;
+                            var findTest = this.MyAdapter.ViewHolderLocationDictionary.Where(o => o.Key.LayoutPosition == this.ViewHolder.LayoutPosition).ToList();
 
-                            //        this.Adapter.NotifyItemChanged(dataLocation.Key);
-                            //    }
-                            //}
-
-                            if (dataLocation.Key.LayoutPosition != this.ViewHolder.LayoutPosition)
+                            bool isItemMove = false;
+                            // untuk check apa kah item yg di klik sudah bergerak apa blm
+                            foreach (var item in findTest)
                             {
-                                var checkPage = 1;
-                                if (this.MyAdapter.LastPagePositionBeforeInEditMode > 1)
-                                    checkPage = this.MyAdapter.LastPagePositionBeforeInEditMode;
+                                int[] screenItemLoc = new int[2];
 
-                                var findLayoutPositionForDataLocation = ((12 * (checkPage - 1)) + dataLocation.Key.LayoutPosition);
+                                int checkX = Math.Abs(viewHolderLocationToCheck.locationX - item.Value.locationX);
+                                int checkY = Math.Abs(viewHolderLocationToCheck.locationY - item.Value.locationY);
 
-                                if (persentageX > 100 || persentageY > 100)
+                                if (checkX > 10 && checkY > 10)
+                                    isItemMove = true;
+                            }
+
+                            foreach (KeyValuePair<RecyclerView.ViewHolder, Location> dataLocation in this.MyAdapter.ViewHolderLocationDictionary)
+                            {
+                                int locationX = dataLocation.Value.locationX;
+                                int locationY = dataLocation.Value.locationY;
+
+                                int persentageX = Math.Abs(viewHolderLocationToCheck.locationX - locationX);
+                                int persentageY = Math.Abs(viewHolderLocationToCheck.locationY - locationY);
+
+                                //var checkPage = 1;
+                                //if (this.MyAdapter.LastPagePositionBeforeInEditMode > 1)
+                                //    checkPage = this.MyAdapter.LastPagePositionBeforeInEditMode;
+
+                                //var customeLayoutPosition = ((12 * (checkPage - 1)) + this.ViewHolder.LayoutPosition);
+
+                                //if (dataLocation.Key != customeLayoutPosition)
+                                //{
+                                //    if (persentageX > 100 || persentageY > 100)
+                                //    {
+                                //        List<HomeScreenMenuItem> itemToChangeSizeBack = this.MyAdapter.data.Where(o => o.ItemPositionForEdit == dataLocation.Key).ToList();
+                                //        int updatePrevShowingIndicator = -1;
+                                //        foreach (var item in itemToChangeSizeBack)
+                                //        {
+                                //            if (item.IsIndicatorGroupingShow)
+                                //                updatePrevShowingIndicator = item.ItemPositionForEdit;
+                                //            item.IsIndicatorGroupingShow = false;
+                                //        }
+                                //        if (updatePrevShowingIndicator > -1)
+                                //        {
+                                //            this.Adapter.NotifyItemChanged(updatePrevShowingIndicator);
+                                //        }
+                                //    }
+                                //    else if (persentageX <= 100 && persentageY <= 100)
+                                //    {
+                                //        List<HomeScreenMenuItem> itemToChangeSize = this.MyAdapter.data.Where(o => o.ItemPositionForEdit == dataLocation.Key).ToList();
+                                //        foreach (var item in itemToChangeSize)
+                                //            item.IsIndicatorGroupingShow = true;
+
+                                //        this.Adapter.NotifyItemChanged(dataLocation.Key);
+                                //    }
+                                //}
+
+                                if (dataLocation.Key.LayoutPosition != this.ViewHolder.LayoutPosition)
                                 {
-                                    List<HomeScreenMenuItem> itemToChangeSizeBack = this.MyAdapter.data.Where(o => o.ItemPositionForEdit == findLayoutPositionForDataLocation).ToList();
-                                    int updatePrevShowingIndicator = -1;
-                                    foreach (var item in itemToChangeSizeBack)
+                                    var checkPage = 1;
+                                    if (this.MyAdapter.LastPagePositionBeforeInEditMode > 1)
+                                        checkPage = this.MyAdapter.LastPagePositionBeforeInEditMode;
+
+                                    var findLayoutPositionForDataLocation = ((12 * (checkPage - 1)) + dataLocation.Key.LayoutPosition);
+
+                                    if (persentageX > 100 || persentageY > 100)
                                     {
-                                        if (item.IsIndicatorGroupingShow)
-                                            updatePrevShowingIndicator = item.ItemPositionForEdit;
-                                        item.IsIndicatorGroupingShow = false;
+                                        List<HomeScreenMenuItem> itemToChangeSizeBack = this.MyAdapter.data.Where(o => o.ItemPositionForEdit == findLayoutPositionForDataLocation).ToList();
+                                        int updatePrevShowingIndicator = -1;
+                                        foreach (var item in itemToChangeSizeBack)
+                                        {
+                                            if (item.IsIndicatorGroupingShow)
+                                                updatePrevShowingIndicator = item.ItemPositionForEdit;
+                                            item.IsIndicatorGroupingShow = false;
+                                        }
+                                        if (updatePrevShowingIndicator > -1)
+                                        {
+                                            //this.Adapter.NotifyDataSetChanged();
+                                            //this.Adapter.NotifyItemChanged(dataLocation.Key.LayoutPosition);
+                                            this.MyAdapter.NotifyItemChanged(dataLocation.Key.LayoutPosition);
+                                            //this.MyAdapter.NotifyItemRangeChanged(0, this.MyAdapter.ItemCount);
+                                        }
                                     }
-                                    if (updatePrevShowingIndicator > -1)
+                                    else if (persentageX <= 100 && persentageY <= 100 && persentageX > 20 && persentageY > 20)
                                     {
+                                        List<HomeScreenMenuItem> itemToChangeSize = this.MyAdapter.data.Where(o => o.ItemPositionForEdit == findLayoutPositionForDataLocation).ToList();
+                                        //foreach (var item in itemToChangeSize)
+                                        //    item.IsIndicatorGroupingShow = true;
+                                        //if (isItemMove)
+                                        //{
+                                            
+                                        //}
+                                        foreach (var item in itemToChangeSize)
+                                        {
+                                            if (checkDataHolder.GroupingId == Guid.Empty || string.IsNullOrEmpty(checkDataHolder.GroupName))
+                                            {
+                                                item.IsIndicatorGroupingShow = true;
+                                            }
+                                        }
                                         //this.Adapter.NotifyDataSetChanged();
                                         //this.Adapter.NotifyItemChanged(dataLocation.Key.LayoutPosition);
                                         this.MyAdapter.NotifyItemChanged(dataLocation.Key.LayoutPosition);
                                         //this.MyAdapter.NotifyItemRangeChanged(0, this.MyAdapter.ItemCount);
                                     }
                                 }
-                                else if (persentageX <= 100 && persentageY <= 100)
-                                {
-                                    List<HomeScreenMenuItem> itemToChangeSize = this.MyAdapter.data.Where(o => o.ItemPositionForEdit == findLayoutPositionForDataLocation).ToList();
-                                    //foreach (var item in itemToChangeSize)
-                                    //    item.IsIndicatorGroupingShow = true;
 
-                                    foreach (var item in itemToChangeSize)
-                                    {
-                                        if (checkDataHolder.GroupingId == Guid.Empty || string.IsNullOrEmpty(checkDataHolder.GroupName))
-                                        {
-                                            item.IsIndicatorGroupingShow = true;
-                                        }
-                                    }
-
-                                    //this.Adapter.NotifyDataSetChanged();
-                                    //this.Adapter.NotifyItemChanged(dataLocation.Key.LayoutPosition);
-                                    this.MyAdapter.NotifyItemChanged(dataLocation.Key.LayoutPosition);
-
-                                    //this.MyAdapter.NotifyItemRangeChanged(0, this.MyAdapter.ItemCount);
-                                }
                             }
-
                         }
                     }
                     break;

@@ -52,6 +52,7 @@ namespace SampleGrouping
             {
                 this.MyAdapter.ViewHolderLocationDictionary[this.Holder].locationX = locationX;
                 this.MyAdapter.ViewHolderLocationDictionary[this.Holder].locationY = locationY;
+                this.MyAdapter.ViewHolderLocationDictionary[this.Holder].LayoutPosition = this.Holder.LayoutPosition;
             }
 
             //if (this.MyAdapter.ViewHolderLocationDictionary.ContainsKey(this.Holder.LayoutPosition))
@@ -818,6 +819,15 @@ namespace SampleGrouping
         }
         public void LoadDataAfterAddPage(int newPagePosition)
         {
+            //disini cek dulu jumlah page nya
+            //var findAddItemMenu = this.DataMenu.FindItem(Resource.Id.delete_page);
+            //findAddItemMenu.SetVisible(true);
+
+            if (this.HomeScreenMenu.pageSize > 1)
+                this.MainActivity.ShowHideDeletePage(true);
+            else
+                this.MainActivity.ShowHideDeletePage(false);
+
             this.LastPagePositionBeforeInEditMode = newPagePosition;
             var data = this.LastSavedData;
 
@@ -1509,14 +1519,6 @@ namespace SampleGrouping
                     }
                 }
             }
-            //if (itemProduct.IsIndicatorGroupingShow && this.isModeEditNow && !string.IsNullOrEmpty(itemProduct.ItemType))
-            //{
-                
-            //}
-            //if (!itemProduct.IsIndicatorGroupingShow && this.isModeEditNow)
-            //{
-                
-            //}
         }
         public void OnClick(View v)
         {
