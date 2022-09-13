@@ -33,6 +33,10 @@ namespace SampleGrouping
 
             int locationX = screenLocation[0];
             int locationY = screenLocation[1];
+            //if (this.Holder.LayoutPosition == 5)
+            //{
+            //    System.Diagnostics.Debug.WriteLine("POSITION " + locationX);
+            //}
 
             Location generateLocation = new Location();
             generateLocation.locationX = locationX;
@@ -1539,11 +1543,15 @@ namespace SampleGrouping
 
             if (this.isModeEditNow)
             {
+                if(this.SavedMyOnGlobalListener!=null)
+                    holder.ItemView.ViewTreeObserver.RemoveOnGlobalLayoutListener(this.SavedMyOnGlobalListener);
                 holder.ItemView.ViewTreeObserver.AddOnGlobalLayoutListener(new MyOnGlobalListener(this, holder));
                 SavedMyOnGlobalListener = new MyOnGlobalListener(this, holder);
             }
             else
             {
+                if (this.SavedMyOnGlobalListener != null)
+                    holder.ItemView.ViewTreeObserver.RemoveOnGlobalLayoutListener(this.SavedMyOnGlobalListener);
                 if (this.ViewHolderLocationDictionary.Count > 0)
                     this.ViewHolderLocationDictionary.Clear();
             }
@@ -1623,11 +1631,16 @@ namespace SampleGrouping
             List<HomeScreenMenuItem> itemFromPosition = this.data.Where(o => o.ItemPositionForEdit == fromPosition && o.IsDeleted == false).ToList();
             List<HomeScreenMenuItem> itemToPosition = this.data.Where(o => o.ItemPositionForEdit == toPosition && o.IsDeleted == false).ToList();
 
+            //holder.ItemView.ViewTreeObserver.AddOnGlobalLayoutListener(new MyOnGlobalListener(this, holder));
+            //SavedMyOnGlobalListener = new MyOnGlobalListener(this, holder);
+
             //5 - 1
             if (fromPosition < toPosition)
             {
                 for (int i = fromPosition; i < toPosition; i++)
                 {
+
+
                     HomeScreenMenuItem getX = this.data.FirstOrDefault(o => o.ItemPositionForEdit == i && o.IsDeleted == false);
                     HomeScreenMenuItem getY = this.data.FirstOrDefault(o => o.ItemPositionForEdit == (i + 1) && o.IsDeleted == false);
 
@@ -1885,6 +1898,13 @@ namespace SampleGrouping
                 }
             }
             
+            foreach (var eachItem in this.data)
+            {
+                var test = this.RecyclerView.FindViewHolderForLayoutPosition(eachItem.ItemPositionForEdit);
+                //test.ItemView.ViewTreeObserver.AddOnGlobalFocusChangeListener(new MyOnGlobalListener(this, test);
+                this.SavedMyOnGlobalListener = new MyOnGlobalListener(this, test);
+            }
+
         }
         public void OnGrouping(int fromPosition, int toPosition)
         {
@@ -1965,8 +1985,8 @@ namespace SampleGrouping
             base.OnViewDetachedFromWindow(holder);
             //holder.ItemView.ViewTreeObserver.AddOnGlobalLayoutListener(new MyOnGlobalListener(this, holder));
             //SavedMyOnGlobalListener = new MyOnGlobalListener(this, holder);
-            RecyclerView.ViewHolder viewHolder = holder as RecyclerView.ViewHolder;
-            viewHolder.ItemView.ViewTreeObserver.RemoveOnGlobalLayoutListener(this.SavedMyOnGlobalListener);
+            //RecyclerView.ViewHolder viewHolder = holder as RecyclerView.ViewHolder;
+            //viewHolder.ItemView.ViewTreeObserver.RemoveOnGlobalLayoutListener(this.SavedMyOnGlobalListener);
         }
         internal class MyViewHolder : RecyclerView.ViewHolder
         {
