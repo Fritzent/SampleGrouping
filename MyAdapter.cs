@@ -33,10 +33,6 @@ namespace SampleGrouping
 
             int locationX = screenLocation[0];
             int locationY = screenLocation[1];
-            //if (this.Holder.LayoutPosition == 5)
-            //{
-            //    System.Diagnostics.Debug.WriteLine("POSITION " + locationX);
-            //}
 
             Location generateLocation = new Location();
             generateLocation.locationX = locationX;

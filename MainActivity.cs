@@ -22,7 +22,7 @@ namespace SampleGrouping
         public int LayoutPosition { get; set; }
     }
     public class HomeScreenMenuItem
-    { 
+    {
         public Guid HomeScreenMenuId { get; set; }
         public Guid HomeScreenMenuItemId { get; set; }
         public string ItemName { get; set; }
@@ -130,10 +130,10 @@ namespace SampleGrouping
             PopulateRecyclerView();
             this.HandlePageIndicator(1);
         }
-        
+
         public void PopulateRecyclerView()
         {
-            listData.Add(new HomeScreenMenuItem { HomeScreenMenuItemId = Guid.NewGuid(), ItemName = "item 1", ItemPosition = 0, GroupName = "", ItemType= "product", ListGroupItemName = { }, IsDeleted =false, GroupingId = Guid.Empty });
+            listData.Add(new HomeScreenMenuItem { HomeScreenMenuItemId = Guid.NewGuid(), ItemName = "item 1", ItemPosition = 0, GroupName = "", ItemType = "product", ListGroupItemName = { }, IsDeleted = false, GroupingId = Guid.Empty });
             listData.Add(new HomeScreenMenuItem { HomeScreenMenuItemId = Guid.NewGuid(), ItemName = "item 2", ItemPosition = 1, GroupName = "", ItemType = "product", ListGroupItemName = { }, IsDeleted = false, GroupingId = Guid.Empty });
             listData.Add(new HomeScreenMenuItem { HomeScreenMenuItemId = Guid.NewGuid(), ItemName = "item 3", ItemPosition = 2, GroupName = "", ItemType = "product", ListGroupItemName = { }, IsDeleted = false, GroupingId = Guid.Empty });
             listData.Add(new HomeScreenMenuItem { HomeScreenMenuItemId = Guid.NewGuid(), ItemName = "item 4", ItemPosition = 3, GroupName = "", ItemType = "product", ListGroupItemName = { }, IsDeleted = false, GroupingId = Guid.Empty });
@@ -278,7 +278,7 @@ namespace SampleGrouping
                 if (updateIndicator)
                     this.recyclerView.SmoothScrollToPosition((mAdapter.LastPagePositionBeforeInEditMode * 12) - 1);
 
-                Task.Run(async () => 
+                Task.Run(async () =>
                 {
                     await Task.Delay(3000);
                     this.IgnoreScrollStateChanged = false;
@@ -309,7 +309,7 @@ namespace SampleGrouping
                 mAdapter.UndoDeletedItem();
             if (mAdapter.LastActionDoing == "DeletePage")
             {
-                HomeScreenMenu getUpdatedHomeScreenMenu= mAdapter.UndoDeletePage(this.homeScreenMenu);
+                HomeScreenMenu getUpdatedHomeScreenMenu = mAdapter.UndoDeletePage(this.homeScreenMenu);
                 this.homeScreenMenu = getUpdatedHomeScreenMenu;
                 if (mAdapter.isPageMovedAfterDeletePage)
                     this.PageNumberText.Text = mAdapter.LastPagePositionBeforeInEditMode.ToString();
@@ -455,7 +455,7 @@ namespace SampleGrouping
 
             int next = toIndex > fromIndex ? 1 : -1;
 
-            for (int i = fromIndex; i != toIndex; i+=next)
+            for (int i = fromIndex; i != toIndex; i += next)
             {
                 View child = recyclerView.GetChildAt(i);
                 int childStart = gridLayoutManager.GetDecoratedLeft(child);
@@ -489,7 +489,7 @@ namespace SampleGrouping
                     var checkData = gridLayoutManager.ChildCount;
                     var checkChildCountInRecyclerView = recyclerView.ChildCount;
 
-                    
+
                     var findLastCompletelyVisibleItemPosition = this.FindOneVisibleChild((checkChildCountInRecyclerView - 1), -1, true, recyclerView, gridLayoutManager);
 
                     int child = 0;
@@ -579,15 +579,15 @@ namespace SampleGrouping
                 int dragFlags = ItemTouchHelper.ActionStateIdle;
                 return MakeMovementFlags(dragFlags, 0);
             }
-            
-            
+
+
         }
         public override void OnMoved(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, int fromPos, RecyclerView.ViewHolder target, int toPos, int x, int y)
         {
             base.OnMoved(recyclerView, viewHolder, fromPos, target, toPos, x, y);
-            
+
         }
-        public override bool OnMove(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder,RecyclerView.ViewHolder target)
+        public override bool OnMove(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, RecyclerView.ViewHolder target)
         {
             int from = viewHolder.LayoutPosition;
             int to = target.LayoutPosition;
@@ -619,7 +619,7 @@ namespace SampleGrouping
             int diffY = Math.Abs(checkViewHolderY - checkTargetY);
 
 
-            if (diffX > 100 || diffY > 100)
+            if (diffX > 5 || diffY > 5)
             {
                 var checkPage = 1;
                 if (this.MyAdapter.LastPagePositionBeforeInEditMode > 1)
@@ -652,7 +652,7 @@ namespace SampleGrouping
         public bool IsStillDrag { get; set; }
         public bool OnMoveCalled { get; set; }
         public RecyclerView.ViewHolder ViewHolder { get; set; }
-        
+
         public override void OnSwiped(RecyclerView.ViewHolder p0, int p1)
         {
             throw new NotImplementedException();
@@ -708,7 +708,7 @@ namespace SampleGrouping
                                 var findFromPositionLayoutPositionInData = ((12 * (checkPage - 1)) + this.ViewHolder.LayoutPosition);
                                 var findToPositionLayoutPositionInData = ((12 * (checkPage - 1) + dataLocation.Key.LayoutPosition));
 
-                                if (diffX > 20 && diffY > 20 && diffX < 100 && diffY < 100)
+                                if (diffX > 20 && diffY > 20 && diffX < 80 && diffY < 80)
                                 {
                                     mAdapter.OnGrouping(findFromPositionLayoutPositionInData, findToPositionLayoutPositionInData);
                                     this.MyAdapter.NotifyItemRangeChanged(0, this.MyAdapter.ItemCount);
@@ -766,10 +766,10 @@ namespace SampleGrouping
             switch (e.Action)
             {
                 case MotionEventActions.Move:
-                    
+
                     if (this.MainActivity.IsItemInRecyclerViewDragging)
                     {
-                        
+
                         RecyclerView.ViewHolder holder = this.MainActivity.ViewHolderInDragging;
                         if (holder == null)
                             return false;
@@ -797,8 +797,6 @@ namespace SampleGrouping
                             viewHolderLocationToCheck.locationX = viewHolderLocationXGet;
                             viewHolderLocationToCheck.locationY = viewHolderLocationYGet;
 
-                            //var findTest = this.MyAdapter.ViewHolderLocationDictionary.Where(o => o.Key.LayoutPosition == this.ViewHolder.LayoutPosition).ToList();
-                            
                             var findTest = this.MyAdapter.ViewHolderLocationDictionary.Where(o => o.Key.LayoutPosition == this.ViewHolder.LayoutPosition).ToList();
 
                             bool isItemMove = false;
@@ -819,8 +817,6 @@ namespace SampleGrouping
                                 int locationX = dataLocation.Value.locationX;
                                 int locationY = dataLocation.Value.locationY;
 
-                                System.Diagnostics.Debug.Write("Position :" + dataLocation.Key.LayoutPosition + " Location X :" + locationX + " Location Y :" + locationY);
-
                                 int persentageX = Math.Abs(viewHolderLocationToCheck.locationX - locationX);
                                 int persentageY = Math.Abs(viewHolderLocationToCheck.locationY - locationY);
 
@@ -832,7 +828,7 @@ namespace SampleGrouping
 
                                     var findLayoutPositionForDataLocation = ((12 * (checkPage - 1)) + dataLocation.Key.LayoutPosition);
 
-                                    if (persentageX > 100 || persentageY > 100)
+                                    if (persentageX > 80 || persentageY > 80)
                                     {
                                         List<HomeScreenMenuItem> itemToChangeSizeBack = this.MyAdapter.data.Where(o => o.ItemPositionForEdit == findLayoutPositionForDataLocation).ToList();
                                         int updatePrevShowingIndicator = -1;
@@ -847,7 +843,7 @@ namespace SampleGrouping
                                             this.MyAdapter.NotifyItemChanged(dataLocation.Key.LayoutPosition);
                                         }
                                     }
-                                    else if (persentageX > 20 && persentageY > 20 && persentageX < 100 && persentageY < 100)
+                                    else if (persentageX > 20 && persentageY > 20 && persentageX < 80 && persentageY < 80)
                                     {
                                         List<HomeScreenMenuItem> itemToChangeSize = this.MyAdapter.data.Where(o => o.ItemPositionForEdit == findLayoutPositionForDataLocation).ToList();
                                         foreach (var item in itemToChangeSize)
