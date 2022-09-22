@@ -619,7 +619,7 @@ namespace SampleGrouping
             int diffY = Math.Abs(checkViewHolderY - checkTargetY);
 
 
-            if (diffX > 5 || diffY > 5)
+            if (diffX > 80 || diffY > 80)
             {
                 var checkPage = 1;
                 if (this.MyAdapter.LastPagePositionBeforeInEditMode > 1)
